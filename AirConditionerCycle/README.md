@@ -6,6 +6,8 @@ R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器
 
 部品名から、接続先・方程式・設定値・OMEdit で表示する変数を引けます。例題には運転条件と参照結果を併記しています。[コンポーネント別ガイド](PhysicalEquations.md#サイクルの機器) ／ [冷凍サイクルの例題](PhysicalEquations.md#冷凍サイクルの例題) ／ [単体例題](PhysicalEquations.md#圧縮機と部品の単体例題) ／ [冷媒別の例題](PhysicalEquations.md#冷媒別の例題) ／ [PDF 版](PhysicalEquations.pdf)
 
+接続図のポート名から、受け渡す量・単位・正方向と接続先を確認できます。[コネクタの読み方](PhysicalEquations.md#冷媒と熱のコネクタ) ／ [機械・容積ポート](PhysicalEquations.md#機械フランジと作動室の容積ポート) ／ [信号](PhysicalEquations.md#制御信号と計測入力) ／ [内部サブコンポーネント](PhysicalEquations.md#圧縮機の内部サブコンポーネント) ／ [例題の境界部品](PhysicalEquations.md#例題の境界サブコンポーネント)
+
 ## 圧縮機を選ぶ
 
 ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **AdiabaticRotaryStandalone** から始めてください。

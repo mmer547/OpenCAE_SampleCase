@@ -14,6 +14,11 @@
 - [アキュームレータ・吸入管・シリンダ](#吸入から作動室まで) ／ [リード弁・マフラ・シェル・吐出管](#吐出弁から吐出管まで)
 - [モーター・偏心軸・ローラ・ベーン](#ロータリーの駆動部) ／ [共通クラスと冷媒物性](#共通クラスと冷媒物性)
 
+**接続先・内部の変数を探す**
+
+- [冷媒と熱のコネクタ](#冷媒と熱のコネクタ) ／ [機械フランジと作動室の容積ポート](#機械フランジと作動室の容積ポート)
+- [制御信号と計測入力](#制御信号と計測入力) ／ [圧縮機の内部サブコンポーネント](#圧縮機の内部サブコンポーネント) ／ [例題の境界サブコンポーネント](#例題の境界サブコンポーネント)
+
 **実行する例題を探す**
 
 - [冷凍サイクルの例題](#冷凍サイクルの例題) ／ [圧縮機と部品の単体例題](#圧縮機と部品の単体例題) ／ [冷媒別の例題](#冷媒別の例題)
@@ -149,6 +154,119 @@ PI 速度制御器が指令 `speed` と実速度から電磁トルク `driveTorq
 
 `Media.R134a`、`R290`、`R32`、`CO2` は CoolProp に物性計算を委ねます。`Media.R410A` は擬似純物質として扱い、飽和線上の密度・エンタルピー・温度の圧力微分を、蓄積量に使用した飽和物性から差分で求めます。冷媒を変更する例では、飽和圧力、吸入過熱度に対応する比エンタルピー、吐出側の初期状態もその冷媒の物性で計算します（第4・11章）。[R134a](Media/R134a.mo)・[R290](Media/R290.mo)・[R32](Media/R32.mo)・[R410A](Media/R410A.mo)・[CO₂](Media/CO2.mo)
 
+## 冷媒と熱のコネクタ
+
+### FluidPort_a・FluidPort_b　冷媒ポートの読み方
+
+たとえば `connect(compressor.outlet, condenser.inlet)` には、圧力、質量流量、流体が運ぶ比エンタルピーが含まれます。下表の接続は、同じ組立モデル内に置いた二部品を直接つなぐ場合です。各ポートで流量はその部品への流入を正とします。[回路の接続](CoolingCycle.mo)・[ポートの宣言と順方向制約](Interfaces/PartialTwoPort.mo)・[標準ライブラリの FluidPort](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Fluid/Interfaces.mo)
+
+| フィールド | 単位・種類 | 圧縮機出口と凝縮器入口での関係 |
+|---|---|---|
+| `p` | Pa・絶対圧力 | 二つのポートで同じ圧力。圧力降下を調べるときは機器の入口と出口を比較する。 |
+| `m_flow` | kg/s・`flow` | 両ポートの和はゼロ。正の吐出量は圧縮機側の `-outlet.m_flow`、凝縮器側の `inlet.m_flow`。 |
+| `h_outflow` | J/kg・`stream` | 各部品から流出するときの比エンタルピー。順方向では凝縮器の `h_in = inStream(inlet.h_outflow)` が圧縮機出口の値を受ける。 |
+| `Xi_outflow`、`C_outflow` | 質量分率・微量成分の `stream` | 本パッケージでは `nXi = nC = 0`。冷媒の組成と微量成分を運ぶ配列は空。 |
+
+`_a` と `_b` は標準ライブラリの設計上の入口・出口です。本モデルは入口 `m_flow ≥ 0` の冷房運転を前提とします。作動中の吸入比エンタルピーをプロットするには `compressor.h_in` を選びます。入口自身の `h_outflow` は、その入口から逆向きに出る場合の値です。
+
+**組立の外端をたどる。** 冷凍回路では圧縮機 → 凝縮器 → 弁 → 蒸発器 → 圧縮機の各 `outlet` を次の `inlet` に接続します。ロータリー内の順序は `accumulator` → `suctionPipe` → `cylinder` → `reed` → `muffler` → `shell` → `dischargePipe` です。外部の `inlet` は `accumulator.inlet` に、`dischargePipe.outlet` は外部の `outlet` につながります。この外端と内部部品は同じ向きに流量を測るため、例えば `compressor.inlet.m_flow = compressor.accumulator.inlet.m_flow` です。一つの圧縮機の入口流量と吐出量には、内部蓄積の分だけ瞬時差が生じます。[ロータリーの配管](Components/Rotary/BaseClasses/PartialRollingPiston.mo)
+
+### HeatPort_a・HeatPort_b　熱流の正方向
+
+温度 `T` [K] は接続点で一致し、同じ接続点に集まる部品側の `Q_flow` [W] の和はゼロです。正は各部品への入熱です。室内側は `room.port ↔ cycle.roomAir ↔ evaporator.air`、室外側は `condenser.air ↔ cycle.outdoorAir ↔ outdoor.port`。冷房時の正の吸熱量は `cycle.roomAir.Q_flow`、正の放熱量は `-cycle.outdoorAir.Q_flow` と読めます。[空気側の配線](CoolingCycle.mo)・[熱ポートの定義](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Thermal/HeatTransfer/Interfaces/HeatPort.mo)
+
+熱連成ロータリーでは `motor.heat`、`shaft.heat`、`vane.heat`、`cylinder.wall`、`shell.wall` が一つの熱接続点です。モーターが発熱を渡すとき、`motor.heat.Q_flow` は負になります。`shell.wall.Q_flow` はこの接続点から壁に入る熱、`shell.Q_ambient` は壁から外気へ出る熱です。後者は周囲温度パラメータとの温度差から計算します。断熱ロータリーにはこの熱接続点がなく、散逸動力は `driveLoss` で読めます。[熱連成版の接続](Components/Rotary/RollingPistonCompressor.mo)・[シェル壁の収支](Components/Rotary/Shell.mo)・[断熱版](Components/Rotary/AdiabaticRollingPistonCompressor.mo)
+
+## 機械フランジと作動室の容積ポート
+
+### 回転 Flange_a・Flange_b　モーターからローラまで
+
+`motor.shaft ↔ shaft.drive` と `shaft.crank ↔ roller.shaft` が二つの軸継手です。標準ライブラリの回転フランジでは、継手ごとに軸角 `phi` [rad] は一致し、対になるトルク `tau` [N·m] は符号が反対になります。各部品に入る仕事率は $\tau\,\mathrm{der}(\phi)$。モーターが軸へ出す動力は `motor.P_mech = -motor.shaft.tau × motor.w` です。偏心軸の両端は同じ角度で回りますが、その間には軸受の抵抗トルクと、詳細損失を有効にしたときの油膜抵抗が働きます。[回転フランジの定義](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Mechanics/Rotational/Interfaces/Flange.mo)・[モーター](Components/Rotary/BaseClasses/PartialMotor.mo)・[偏心軸](Components/Rotary/BaseClasses/ShaftMechanics.mo)
+
+### 並進 Flange_a・Flange_b　ローラとベーン先端
+
+`roller.follower ↔ vane.tip` では先端位置 `s` [m] が一致し、接触部で伝える力 `f` [N] の和はゼロです。ローラの幾何が変位を決め、ベーンのばね、質量、摺動摩擦による反力がローラの軸トルクに戻ります。ベーンに入る仕事率は `vane.tip.f × vane.v`、そのうち摩擦による散逸は `vane.friction × vane.v` です。[並進フランジの定義](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Mechanics/Translational/Interfaces/Flange.mo)・[ローラ](Components/Rotary/Roller.mo)・[ベーンの運動](Components/Rotary/BaseClasses/VaneMechanics.mo)
+
+### VolumePort　容積と圧力を結んで圧縮仕事を渡す
+
+このパッケージ独自のコネクタです。フィールドは共有する容積 `V` [m³] と、`flow` として宣言した圧力 `effort` [Pa] の二つです。気体側は `boundary.effort = -p`、ローラ側は $+p$。したがって作動室が受ける仕事率は $-p\dot V$ [W] です。冷媒の出入りは別途シリンダの流動方程式が扱います。[宣言](Components/Rotary/BaseClasses/VolumePort.mo)・[作動室側の式](Components/Rotary/BaseClasses/GasPocket.mo)
+
+| 図上でたどる経路（圧縮機内） | 容積の変化率 | 気体側の変数 |
+|---|---|---|
+| `roller.a ↔ cylinder.a ↔ pocketA.boundary` | `pocketA.dV = roller.volumeRateA` | `pocketA.p` と `pocketA.boundary.effort` |
+| `roller.b ↔ cylinder.b ↔ pocketB.boundary` | `pocketB.dV = -roller.volumeRateA` | `pocketB.p` と `pocketB.boundary.effort` |
+
+表の `pocketA` と `pocketB` は `cylinder` の内側です。`cylinder.a` は組立側と内部の `pocketA.boundary` に同じ容積と圧力を伝える中継ポートです。[組立側の接続](Components/Rotary/BaseClasses/PartialRollingPiston.mo)・[シリンダ内の接続](Components/Rotary/BaseClasses/PartialCylinder.mo)
+
+**圧縮中の符号を実例で読む。** R134a の `Examples.RotaryCompressorLossTest` の既定条件で、0.030 s の室 A は `fillingA=false`。圧力は 0.7639 MPa、`roller.volumeRateA` は −0.002540 m³/s でした。ローラの `a.effort` は +0.7639 MPa、作動室の `boundary.effort` は −0.7639 MPa です。容積が減るため、室 A に入る圧縮仕事率は約 **+1.94 kW** になります。この値は一室の瞬時値で、モーターの一回転平均電力とは集計範囲が異なります。[確認用の例題](Examples/RotaryCompressorLossTest.mo)
+
+## 制御信号と計測入力
+
+### RealInput・RealOutput・BooleanInput・BooleanOutput
+
+信号線では送り側の値が受け側に伝わります。例えば、蒸発器に液が減ると `evaporator.level` が下がり、同じ値を受け取った弁が目標液位との差から `valve.opening` を増やします。開度を求める計算は弁の中にあります。[液位の出力](Components/Evaporator.mo)・[開度の計算](Components/ExpansionValve.mo)
+
+| 出力 | 入力 | 伝える量と使い道 |
+|---|---|---|
+| `evaporator.level` | `valve.level` | 実数・無次元。蒸発器の液体**体積率**で膨張弁を制御する。 |
+| `airTemperature.y` | `outdoor.T` | 実数・K。外気温ランプ例で室外の温度境界を駆動する。 |
+| `roller.fillingA` | `cylinder.fillingA` | 真偽値。true では A が吸入、B が圧縮・吐出。false では役割が逆になる。 |
+| `roller.volumeRateA` | `cylinder.volumeRateA` | 実数・m³/s。ローラ幾何から求めた室 A の容積変化率。室 B には符号を反転して使う。 |
+| `vane.leakArea` | `cylinder.leakArea` | 実数・m²。ベーン高さと有効先端すきまの積。シリンダが差圧・上流密度と組み合わせて漏れ流量を求める。 |
+
+`volumeRateA` はローラが動かす作動室境界の容積変化率です。室間を移動する冷媒の質量流量は `cylinder.leakAB` [kg/s] で、A から B へ向かうときが正です。ローラの回転境界で `fillingA` が切り替わっても、各室の質量・内部エネルギーは引き継がれます。[信号線の接続](Components/Rotary/BaseClasses/PartialRollingPiston.mo)・[作動室への配分](Components/Rotary/BaseClasses/PartialCylinder.mo)
+
+### LossReport の入力　何を、どの期間で集計するか
+
+`useDetailedLosses=true` のとき、組立モデルが宣言時の式で `losses` の各入力に値を渡します。これらはダイアグラムで配線する信号ポートとは別に定義されています。
+
+- `power[Channel]` [W] は部位別の瞬時動力です。例えば `indicated` は $-(p_A-p_B)\dot V_A$、`electric` は電気入力です。
+- `leakRate` は `abs(cylinder.leakAB)`、`delivered` は `-outlet.m_flow`、`theoretical` は吸入密度 × 行程容積 × 実回転数。いずれも kg/s です。
+- `revolutions` はローラの完了回転数です。変化した時点で各積分の差を取り、`meanPower`、`meanLeakRate`、容積効率などを更新します。最初の平均値は最初の一回転が完了した後に読みます。[入力の割当](Components/Rotary/BaseClasses/PartialRollingPiston.mo)・[回転平均の実装](Components/Rotary/LossReport.mo)
+
+## 圧縮機の内部サブコンポーネント
+
+### gas と pocketA・pocketB　五つの冷媒容積
+
+圧縮機の総冷媒質量 `charge` は次の五つの質量の和です。下表は単体例の `compressor` を展開したときの相対パスです。各行に `.p`、`.h`、`.mass`、`.U` を付けると、順に圧力 [Pa]、比エンタルピー [J/kg]、質量 [kg]、内部エネルギー [J] が得られます。[容積の状態変数](Components/Rotary/BaseClasses/VolumeState.mo)・[総量の集計](Components/Rotary/BaseClasses/PartialRollingPiston.mo)
+
+| 内部インスタンス | 容積モデル | 親部品から受け取るもの |
+|---|---|---|
+| `accumulator.gas` | 固定・550 cm³ | 入口絞りと蒸気取り出し口からの質量・エンタルピー流入。入熱はゼロ。 |
+| `cylinder.pocketA`、`cylinder.pocketB` | 可動・各1室 | ローラの容積、吸入または吐出流量、室間漏れとそのエンタルピー。熱連成版では壁との熱交換も受ける。 |
+| `muffler.gas` | 固定・85 cm³ | リード弁からの流入と出口絞りからの流出。入熱はゼロ。 |
+| `shell.gas` | 固定・850 cm³ | マフラからの流入と吐出管への流出。熱連成版では壁からの `Q_gas`、断熱版では入熱ゼロ。 |
+
+固定容器では `FixedVolume` が内部に `VolumeState gas` を持ち、`dV=0` とします。`GasPocket` は `VolumeState` を継承して `boundary` を追加します。この違いのため、作動室の質量は `cylinder.pocketA.mass` と直接参照します。どちらも `dm` [kg/s]、`H_flow` [W]、`Q_flow` [W] を親から受け、$\dot M=\mathrm{dm}$、$\dot U=H_{flow}+Q_{flow}-p\dot V$ を満たします。[固定容積の結合](Components/Rotary/BaseClasses/FixedVolume.mo)・[可動作動室](Components/Rotary/BaseClasses/GasPocket.mo)
+
+### 同じインスタンス名で詳細度を切り替える部品
+
+OMEdit 上ではどちらの圧縮機でも `shell` や `motor` と表示されます。基底組立 `PartialRollingPiston` の置換可能クラスに対して、断熱版が次の5種類を再宣言します。両方の例でシェルの冷媒温度は `compressor.shell.gas.T`、熱連成版で金属壁温は `compressor.shell.Twall` です。[熱連成組立](Components/Rotary/RollingPistonCompressor.mo)・[断熱版の再宣言](Components/Rotary/AdiabaticRollingPistonCompressor.mo)
+
+| 内部名 | 熱連成ロータリー | 断熱ロータリー |
+|---|---|---|
+| `cylinder` | `Cylinder` | `Adiabatic.Cylinder` |
+| `shell` | `Shell` | `Adiabatic.DischargePlenum` |
+| `motor` | `Motor` | `Adiabatic.Motor` |
+| `shaft` | `EccentricShaft` | `BaseClasses.ShaftMechanics` |
+| `vane` | `Vane` | `BaseClasses.VaneMechanics` |
+
+## 例題の境界サブコンポーネント
+
+### Boundary_ph と System　単体試験の吸入・吐出境界
+
+`PartialRotaryBench` は `suction` と `discharge` に標準ライブラリの `Modelica.Fluid.Sources.Boundary_ph` を一つずつ使います。`nPorts=1` なので使うポートはどちらも `ports[1]` です。吸入側は `suction.ports[1] ↔ compressor.inlet`、吐出側は `compressor.outlet ↔ discharge.ports[1]` とつなぎます。境界の圧力は接続点に適用されます。境界に設定する比エンタルピーは、その境界が冷媒を供給する場合の値です。順方向の吐出温度は圧縮機出口の圧力と比エンタルピーから求めます。
+
+熱連成損失例の 0.030 s では `compressor.outlet.m_flow` が −0.02132 kg/s、吐出境界の `discharge.ports[1].m_flow` が +0.02132 kg/s でした。例題の `dischargeFlow` は後者と同じ向きで、吐出量を正に表示します。`inner Modelica.Fluid.System system` は標準流体部品が参照する共通の既定値を提供します。吸入圧力と背圧の指定先はそれぞれ `suctionPressure` と `dischargePressure` です。[境界・初期条件・出力の実装](Examples/BaseClasses/PartialRotaryBench.mo)
+
+### MassFlowSource_h　湿り吸入試験の抜き出し口
+
+`AccumulatorWetInlet` は `feed.ports[1] ↔ accumulator.inlet` に湿り冷媒を与える `Boundary_ph` を、`accumulator.outlet ↔ extraction.ports[1]` に `MassFlowSource_h` を置きます。`extraction.m_flow=-0.012` kg/s は流量源の設定値です。流量源の正方向は供給なので、この設定ではアキュームレータから毎秒 0.012 kg を抜きます。結果では `accumulator.outlet.m_flow` が負、流量源自身に入る `extraction.ports[1].m_flow` が正です。出口状態を決めるのはアキュームレータで、`accumulator.outlet.h_outflow` を飽和蒸気値 `hDew` と比較できます。[湿り吸入試験](Examples/AccumulatorWetInlet.mo)・[標準の境界モデル](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Fluid/Sources.mo)
+
+### FixedTemperature・PrescribedTemperature・Ramp　空気温度の境界
+
+`RatedCooling` は `room` と `outdoor` をともに `FixedTemperature` とし、熱ポート温度を 298.15 K と 308.15 K に保ちます。必要な熱流率は熱交換器と解いた結果です。`OutdoorTemperatureRamp` では室外側を `PrescribedTemperature` に替え、`Ramp airTemperature` の出力を温度入力 `outdoor.T` に結びます。例えば 180 s では `airTemperature.y` と `outdoor.port.T` がともに 310.65 K（37.5 °C）になります。温度指令と、同時刻に凝縮器が実際に捨てる熱量率 `cycle.Q_rejected` を区別して表示できます。[定格冷房の温度源](Examples/RatedCooling.mo)・[外気温ランプの配線](Examples/OutdoorTemperatureRamp.mo)
+
 ## 冷凍サイクルの例題
 
 OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditionerCycle/package.mo` を開きます。下記は `AirConditionerCycle.Examples` 内の実行クラスです。「シミュレーション」を実行し、結果ブラウザーで指定の変数を選びます。圧力は Pa → MPa、冷房能力は W → kW に表示単位を切り替えると、以下の数値と照合できます。
@@ -249,6 +367,8 @@ OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditio
 ### 冷媒・熱・機械の接続条件
 
 冷媒には Modelica.Fluid の流体ポートを使います。各部品の流量 [kg/s] は**流入が正**です。入口を $j_i$、出口を $j_o$ と書きます。`PartialTwoPort` での変数名は `inlet.m_flow` と `outlet.m_flow` です。順方向運転では $j_i\geq0,\ j_o\leq0$、正の吐出流量は $-j_o$ です。蓄積容積を持つ部品では $j_i+j_o$ が部品内の質量変化率になります。
+
+下表は同じ階層の部品どうしを結ぶ場合です。組立の外端から内部部品へ引き継ぐ流量の符号は、[冷媒と熱のコネクタ](#冷媒と熱のコネクタ) で具体例を示します。
 
 | 接続 | 一致する量 | 接続点で満たす式 |
 |---|---|---|
