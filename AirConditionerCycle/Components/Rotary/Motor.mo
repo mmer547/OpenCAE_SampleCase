@@ -4,6 +4,15 @@ model Motor "回転子慣性とPI速度制御を持つ電動機"
   parameter SI.Frequency speed(min=1)=50 "回転数 rev/s";
   parameter Real efficiency(min=0.1, max=1)=0.91;
   parameter SI.Power idleLoss(min=0)=18;
+  parameter Boolean detailedLosses=false "銅損・鉄損を個別計算" annotation(Evaluate=true);
+  parameter SI.Resistance phaseResistance20(min=0)=0.32 "20 °C における一相当たり抵抗";
+  parameter Real torqueConstant(unit="N.m/A",min=1e-6)=0.45 "相電流実効値当たりトルク";
+  parameter Real resistanceCoefficient(unit="1/K",min=0)=0.00393;
+  parameter SI.Frequency ironReferenceSpeed(min=1)=50 "鉄損定格の機械回転数 rev/s";
+  parameter SI.Power hysteresisReference(min=0)=12 "基準速度でのヒステリシス損";
+  parameter SI.Power eddyReference(min=0)=8 "基準速度での渦電流損";
+  SI.Power copperLoss "三相巻線の銅損（詳細損失設定）";
+  SI.Power ironLoss "ヒステリシス損と渦電流損の和（詳細損失設定）";
   parameter SI.Inertia J(min=1e-6)=0.0015 "回転子と軸の等価慣性モーメント";
   parameter SI.RotationalDampingConstant Kp(min=1e-5)=0.12 "速度制御の比例ゲイン";
   parameter SI.Time Ti(min=1e-4)=0.025 "速度制御の積分時間";
@@ -31,7 +40,12 @@ equation
   J*der(w) = driveTorque + shaft.tau;
   P_mech = -shaft.tau*w;
   E_rotor = J*w^2/2;
-  P_el = idleLoss + driveTorque*w/efficiency;
+  copperLoss = if detailedLosses then 3*phaseResistance20*
+    (1 + resistanceCoefficient*(heat.T-293.15))*(driveTorque/torqueConstant)^2 else 0;
+  ironLoss = if detailedLosses then hysteresisReference*abs(w)/(2*Modelica.Constants.pi*ironReferenceSpeed)
+    + eddyReference*(w/(2*Modelica.Constants.pi*ironReferenceSpeed))^2 else 0;
+  P_el = if detailedLosses then driveTorque*w + idleLoss + copperLoss + ironLoss
+    else idleLoss + driveTorque*w/efficiency;
   heat.Q_flow = driveTorque*w - P_el;
   annotation(Icon(graphics={
     Ellipse(extent={{-66,66},{66,-66}}, lineColor={48,76,90}, fillColor={233,239,245},fillPattern=FillPattern.Solid,lineThickness=1),

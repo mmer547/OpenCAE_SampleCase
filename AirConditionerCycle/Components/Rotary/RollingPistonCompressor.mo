@@ -2,6 +2,8 @@ within AirConditionerCycle.Components.Rotary;
 model RollingPistonCompressor "単気筒・高圧シェル型ローリングピストン圧縮機"
   extends AirConditionerCycle.Interfaces.PartialCompressor(final internalFlowPath=true);
   import SI = Modelica.Units.SI;
+  import dropPower = AirConditionerCycle.Components.Rotary.BaseClasses.pressureDropPower;
+  parameter Boolean useDetailedLosses=false "銅損・鉄損・油膜損失を有効にし、損失と効率を集計" annotation(Evaluate=true);
   parameter SI.Frequency speed(min=1)=50 "軸回転数 rev/s";
   parameter SI.Radius cylinderRadius=0.024;
   parameter SI.Length eccentricity=0.0045;
@@ -21,14 +23,32 @@ model RollingPistonCompressor "単気筒・高圧シェル型ローリングピ�
   DischargePipe dischargePipe(redeclare final package Medium=Medium)
     annotation(Placement(transformation(origin={80,-18},extent={{-10,-10},{10,10}})));
 
-  Motor motor(speed=speed)
+  Motor motor(speed=speed,final detailedLosses=useDetailedLosses)
     annotation(Placement(transformation(origin={-82,-29},extent={{-10,-10},{10,10}})));
-  EccentricShaft shaft(eccentricity=eccentricity)
+  EccentricShaft shaft(eccentricity=eccentricity,faceRadius=cylinderRadius-eccentricity,final useOilFilm=useDetailedLosses)
     annotation(Placement(transformation(origin={-48,-29},extent={{-10,-10},{10,10}})));
   Roller roller(R=cylinderRadius,e=shaft.eccentricity,height=height)
     annotation(Placement(transformation(origin={-6,-29},extent={{-12,-12},{12,12}})));
   Vane vane(height=height)
     annotation(Placement(transformation(origin={-6,-67},extent={{-11,-11},{11,11}})));
+  LossReport losses(
+    revolutions=roller.revolutions,
+    leakRate=noEvent(abs(cylinder.leakAB)), delivered=-outlet.m_flow,
+    theoretical=Medium.density_ph(inlet.p,h_in)*roller.displacement*motor.w/(2*Modelica.Constants.pi),
+    power={motor.copperLoss, motor.ironLoss, motor.idleLoss, shaft.bearingTorque*shaft.w,
+      -vane.heat.Q_flow, shaft.oilFilmLoss,
+      noEvent(dropPower(accumulator.m_flow,accumulator.inlet.p-accumulator.gas.p,Medium.density_ph(inlet.p,h_in))
+        + dropPower(suctionPipe.m_flow,suctionPipe.dp,Medium.density_ph(suctionPipe.inlet.p,suctionPipe.h_in))
+        + dropPower(cylinder.m_flow,cylinder.inlet.p-cylinder.pSuction,Medium.density_ph(cylinder.inlet.p,cylinder.h_in))),
+      noEvent(dropPower(reed.m_flow,reed.inlet.p-reed.outlet.p,if roller.fillingA then cylinder.pocketB.rho else cylinder.pocketA.rho)
+        + dropPower(-muffler.outlet.m_flow,muffler.gas.p-muffler.outlet.p,muffler.gas.rho)
+        + dropPower(dischargePipe.m_flow,dischargePipe.dp,shell.gas.rho)),
+      noEvent(dropPower(abs(cylinder.leakAB),abs(cylinder.pocketA.p-cylinder.pocketB.p),
+        if cylinder.leakAB >= 0 then cylinder.pocketA.rho else cylinder.pocketB.rho)),
+      -(cylinder.pocketA.p-cylinder.pocketB.p)*roller.volumeRateA,
+      shell.Q_ambient, motor.P_el,
+      (-outlet.m_flow)*(Medium.isentropicEnthalpy(outlet.p,Medium.setState_ph(inlet.p,h_in))-h_in)})
+    if useDetailedLosses annotation(Placement(transformation(extent={{65,-78},{87,-56}})));
   SI.Mass charge "圧縮機内の全冷媒質量";
   SI.Energy E "冷媒・シェル壁・ベーン・回転子の蓄積エネルギー";
 equation
@@ -64,5 +84,5 @@ equation
       Ellipse(extent={{-33,45},{57,-45}},lineColor={36,63,83},fillColor={105,153,174},fillPattern=FillPattern.Solid),
       Ellipse(extent={{2,11},{24,-11}},lineColor={36,63,83},fillColor={231,241,246},fillPattern=FillPattern.Solid),
       Line(points={{-59,0},{-33,0}},color={144,79,54},thickness=2)}),
-    Documentation(info="<html><p>高圧シェル型、単気筒の角度分解モデルです。ダイアグラムの上段が冷媒流路、下段が駆動機構です。二つの作動室を交互に追跡することで一回転ごとの質量・内部エネルギーを連続に保ちます。Examples.RotaryCooling では軸角、作動室圧力、リード弁リフトを確認できます。</p></html>"));
+    Documentation(info="<html><p>高圧シェル型、単気筒の角度分解モデルです。ダイアグラムの上段が冷媒流路、下段が駆動機構です。二つの作動室を交互に追跡することで一回転ごとの質量・内部エネルギーを連続に保ちます。Examples.RotaryCooling では軸角、作動室圧力、リード弁リフトを確認できます。useDetailedLosses=true で巻線銅損・鉄損・端面油膜抵抗を使い、losses で電力の内訳、漏れ、圧損仕事率、回転平均効率を表示します。Examples.RotaryCompressorLossTest が単体試験です。</p></html>"));
 end RollingPistonCompressor;

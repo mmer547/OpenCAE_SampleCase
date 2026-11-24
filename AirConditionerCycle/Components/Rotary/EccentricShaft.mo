@@ -11,11 +11,24 @@ model EccentricShaft "偏心軸。軸受摩擦トルクと発熱"
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_b heat
     annotation(Placement(transformation(extent={{-10,-110},{10,-90}})));
   SI.AngularVelocity w;
+  parameter Boolean useOilFilm=false "ローラ両端面の公転によるせん断を加える" annotation(Evaluate=true);
+  parameter SI.DynamicViscosity oilViscosity(min=0)=0.012 "運転温度での油粘度";
+  parameter SI.Length filmThickness(min=1e-8)=12e-6 "片面の油膜厚さ";
+  parameter SI.Radius faceRadius(min=1e-6)=0.0195 "ローラ外半径";
+  parameter SI.Radius boreRadius(min=0)=0.009 "端面の内半径";
+  SI.Torque bearingTorque, oilFilmTorque;
+  SI.Power oilFilmLoss "ローラの公転すべりによる両端面の粘性散逸";
   SI.Torque frictionTorque;
+initial equation
+  assert(not useOilFilm or boreRadius < faceRadius, "The roller bore must lie inside its outer radius.");
 equation
   drive.phi = crank.phi;
   w = der(drive.phi);
-  frictionTorque = bearingFriction*tanh(w/1.0) + viscous*w;
+  bearingTorque = bearingFriction*tanh(w/1.0) + viscous*w;
+  oilFilmTorque = if useOilFilm then 2*Modelica.Constants.pi*(faceRadius^2-boreRadius^2)
+    *oilViscosity*eccentricity^2*w/filmThickness else 0;
+  oilFilmLoss = oilFilmTorque*w;
+  frictionTorque = bearingTorque + oilFilmTorque;
   drive.tau + crank.tau = frictionTorque;
   heat.Q_flow = -frictionTorque*w;
   annotation(Icon(graphics={

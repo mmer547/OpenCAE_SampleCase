@@ -87,5 +87,18 @@ package RefrigerantTests "R290・R32・R410A・CO₂ の冷房試験"
       suctionPressure=Medium.saturationPressure(263.15),dischargePressure=Medium.saturationPressure(281.15),
       ambientTemperature=263.15);
   end CO2SubcriticalStandalone;
+  model R290LossTest "R290 損失評価"
+    extends R290Standalone(useDetailedLosses=true);
+  end R290LossTest;
+  model R32LossTest "R32 損失評価"
+    extends R32Standalone(useDetailedLosses=true);
+  end R32LossTest;
+  model R410ALossTest "R410A 損失評価"
+    extends R410AStandalone(useDetailedLosses=true);
+  end R410ALossTest;
+  model CO2SubcriticalLossTest "CO2Subcritical 損失評価"
+    extends CO2SubcriticalStandalone(useDetailedLosses=true);
+    annotation(experiment(StartTime=0,StopTime=0.23,Interval=0.0000125,Tolerance=3e-8));
+  end CO2SubcriticalLossTest;
   annotation(Documentation(info="<html><p>冷凍サイクル例の室内温度は 25 °C。Standalone は吸入・吐出リザーバを使う圧縮機単体試験です。R290、R32、R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界運転を対象とします。CO₂ の臨界温度は 30.98 °C であり、外気 35 °C の放熱には高圧側ガスクーラが必要です。</p></html>"));
 end RefrigerantTests;

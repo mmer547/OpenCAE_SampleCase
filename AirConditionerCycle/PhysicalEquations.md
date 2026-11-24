@@ -1,6 +1,6 @@
 # 空調用冷凍サイクルの物理方程式
 
-**AirConditionerCycle 1.3.0　技術資料**
+**AirConditionerCycle 1.4.0　技術資料**
 
 この資料は、冷媒状態から冷房能力と消費電力を求める式、およびローリングピストン式圧縮機の軸運動から吐出流量を求める式を、Modelica のクラスに対応づけたものです。標準圧縮機と詳細圧縮機は同じ冷凍回路に接続できます。
 
@@ -14,6 +14,7 @@
 | 圧縮機と回路全体の保存則、1回転の平均 | 10 |
 | 冷媒別の初期化、実行例、試験条件と照合結果 | 11・12 |
 | 圧縮機単体のリザーバ境界、入口逆止弁、開回路での試験 | 13 |
+| モーター・摩擦・流路の損失、モデルの校正、5冷媒の損失評価 | 14–16 |
 
 **単位と添字**　圧力 $p$ は絶対圧 [Pa]、温度 $T$ は [K]、比エンタルピー $h$ は [J/kg]、密度 $\rho$ は [kg/m³]、容積 $V$ は [m³]、エネルギーは [J]、熱流率・動力は [W] です。上付きの点は時間微分、$l,v$ は飽和液・飽和蒸気を表します。$\operatorname{clip}(z,a,b)=\min(b,\max(a,z))$ とします。$T$ の差は K と °C で同じ値です。
 
@@ -347,6 +348,8 @@ $$
 
 ## 9　モーター、偏心軸、ベーン
 
+以下の電力・摩擦式は基本設定です。`useDetailedLosses=true` で変更する項を第14章に示します。
+
 ### モーターの速度制御と慣性
 
 $\omega=\dot\phi$、速度誤差 $e_\omega=2\pi N-\omega$、積分トルク $I$ とすると、トルク上限付き PI 制御と運動方程式は、
@@ -538,3 +541,105 @@ $$
 | CO₂ | 10 | 2.578 | 0.08493 | 34.7 |
 
 **実装と結果**　[RotaryCompressorStandalone.mo](Examples/RotaryCompressorStandalone.mo) ・ [RefrigerantTests.mo](Examples/RefrigerantTests.mo) ・ [単体試験の集計](Resources/Reference/standalone_compressors.csv)
+
+## 14　モーターと摺動部の損失
+
+`RollingPistonCompressor.useDetailedLosses=true` で損失を個別に解きます。`Motor` の回転慣性・PI制御、`EccentricShaft` の軸受摩擦、`Vane` の摺動摩擦は第9章の式です。相電流と回転数からモーターの発熱を求め、ローラ端面油膜の反力を軸のトルク収支に加えます。
+
+### 電気入力から電磁動力へ
+
+三相平衡を仮定します。$K_T$ は相電流実効値あたりのトルク定数、$\tau_d$ は電磁トルク、$T_w$ はシェル壁温 [K] です。巻線抵抗には、この壁温を巻線温度の近似として用います。
+
+$$
+\begin{aligned}
+I_{\rm rms}&=\tau_d/K_T, & R_{\rm ph}&=R_{20}[1+\alpha_R(T_w-293.15)],\\
+P_{\rm Cu}&=3R_{\rm ph} I_{\rm rms}^2, &
+u&=|\omega|/(2\pi N_{\rm ref}),\\
+P_{\rm Fe}&=P_{h,\rm ref}u+P_{e,\rm ref}u^2, &
+P_{\rm el}&=\tau_d\omega+P_{\rm Cu}+P_{\rm Fe}+P_0 .
+\end{aligned}
+$$
+
+磁束を一定とし、ヒステリシス損は回転数に比例、渦電流損は回転数の二乗に比例とします。既定値は $K_T=0.45$ N·m/A、$R_{20}=0.32$ Ω/相、$\alpha_R=0.00393$ $\mathrm{K}^{-1}$、$N_{\rm ref}=50$ rev/s、$P_{h,\rm ref}=12$ W、$P_{e,\rm ref}=8$ W。$P_0=18$ W は一定の付帯損失です。`motor.heat.Q_flow` は $-(P_{\rm Cu}+P_{\rm Fe}+P_0)$ で、これらの損失はシェル壁に流入します。
+
+### 機械摩擦からシェル発熱へ
+
+ローラの両端面と固定板の間に一様な油膜を仮定します。片面の環状面積 $A=\pi(r_o^2-r_i^2)$、油粘度 $\mu$、膜厚 $\delta$、公転によるすべり速度 $e|\omega|$ に対し、ニュートン流体のクエットせん断を面積積分すると、
+
+$$
+\tau_{\rm oil}=\frac{2\mu A e^2}{\delta}\,\omega,\quad
+P_{\rm oil}=\tau_{\rm oil}\omega,\quad
+P_{\rm mech,loss}=\tau_f\omega+F_fv+P_{\rm oil}.
+$$
+
+$r_o=R-e$（既定値 19.5 mm）、$r_i=9$ mm、$e=4.5$ mm、$\delta=12$ µm、$\mu=0.012$ Pa·s。$\tau_f,F_f$ は第9章の軸受摩擦トルクとベーン摩擦力です。$\tau_{\rm oil}$ を駆動軸の抵抗に、$P_{\rm oil}$ をシェル発熱に加えます。油膜式が扱う速度は公転成分です。ローラの自転、油の撹拌、油循環は個別の自由度を持ちません。
+
+機種固有の校正には、抵抗測定とトルク・電流データ、速度別の無負荷損失、油の運転時粘度とすきま寸法を使います。軸受摩擦と端面摩擦は異なる摺動面に割り当てます。上記既定値は代表値です。
+
+**実装**　[Motor.mo](Components/Rotary/Motor.mo) ・ [EccentricShaft.mo](Components/Rotary/EccentricShaft.mo) ・ [Vane.mo](Components/Rotary/Vane.mo)
+
+## 15　圧損・室間漏れと圧縮機の動力収支
+
+### 吸入側・吐出側の圧力損失
+
+各絞り・配管について、質量流量 $\dot m\ge0$、上流密度 $\rho_u$、上流・下流圧 $p_u,p_d$ を用います。圧損の規模を電力と同じ単位で読むための診断量は、
+
+$$
+P_{\Delta p}^{*}=\frac{\dot m}{\rho_u}\max(p_u-p_d,0).
+$$
+
+`suctionDrop` はアキュームレータ入口絞り、吸入管、シリンダ吸入ポートの各値の和です。`dischargeDrop` はリード弁、マフラ出口絞り、吐出管の和です。各部で流量・密度を個別に求めるため、容器の充填・排出を含む過渡状態でも計算できます。圧縮性が強い流路では上流比容を代表値とする近似です。これらの値をエントロピー生成や追加の発熱には換算していません。
+
+室間漏れはベーンすきまを通る双方向の流れです。$\ell>0$ は A→B、$\ell<0$ は B→A、$\rho_u$ はその瞬間に送り出す室の密度とします。
+
+$$
+P_\ell^*=\frac{|\ell|}{\rho_u}|p_A-p_B|,\qquad
+\overline{\dot m_\ell}=\frac{1}{\Delta t}\int_{t_0}^{t_1}|\ell|\,dt .
+$$
+
+漏れによる質量・エンタルピーの移動は第7章の室収支に反映されます。絶対値の平均を使うため、A・B の役割交代で漏れが相殺されません。すきま容積に残るガスの再膨張は第6章の幾何と室圧で計算され、吐出質量と図示仕事に影響します。
+
+### 電気入力の配分と効率
+
+図示動力 $P_i=-p_A\dot V_A-p_B\dot V_B=-(p_A-p_B)\dot V_A$ は、機構が両室の冷媒へ行う正味の仕事率です。回転子、ベーン質量、押付けばねに蓄積されるエネルギーを $E_r+E_v$ とすると、
+
+$$
+P_{\rm el}=P_i+P_{\rm Cu}+P_{\rm Fe}+P_0+P_{\rm mech,loss}+\frac{d(E_r+E_v)}{dt}.
+$$
+
+流路抵抗、漏れ、熱交換は冷媒状態と図示仕事に影響します。上式に足す損失はモーターと機械の散逸です。`shellHeat` は筐体から周囲への符号付き放熱で、第10章の圧縮機全体の境界収支に使います。壁からシェルガスに移る熱は `shell.Q_gas`、各作動室に移る熱は `cylinder.pocketA.Q_flow` と `pocketB.Q_flow` です。
+
+区間 $[t_0,t_1]$ は直前に完了した軸1回転です。$\dot m_o$ は正の外部吐出流量、$\rho_s$ は入口密度、$N=\omega/(2\pi)$、$\Delta h_s=h(p_d,s(p_s,h_s))-h_s$ とすると、
+
+$$
+\eta_v=\frac{\int\dot m_o\,dt}{\int\rho_s V_d N\,dt},\qquad
+\eta_{\rm is,el}=\frac{\int\dot m_o\Delta h_s\,dt}{\int P_{\rm el}\,dt}.
+$$
+
+過渡運転では保有量と蓄熱の影響を含みます。効率と `meanPower` は最初の1回転完了後に更新されます。
+
+**実装**　[LossReport.mo](Components/Rotary/LossReport.mo) ・ [RollingPistonCompressor.mo](Components/Rotary/RollingPistonCompressor.mo) ・ [pressureDropPower.mo](Components/Rotary/BaseClasses/pressureDropPower.mo)
+
+## 16　損失評価を実行する
+
+OMEdit で `AirConditionerCycle.Examples.RotaryCompressorLossTest` を開き、シミュレーションを実行します。`compressor.losses.meanPower` のチャネル名を選ぶと、直前に完了した1回転平均 [W] を表示できます。対応する瞬時値は `compressor.losses.power` にあります。冷媒別の境界条件は第13章と同じです。
+
+| 冷媒 | 電気入力 [W] | モーター損失 [W] | 機械摩擦 [W] | 図示動力 [W] | 電気基準の効率 |
+|---|---:|---:|---:|---:|---:|
+| R134a | 792.3 | 69.4 | 50.5 | 672.3 | 68.7 % |
+| R290 | 1002.2 | 88.1 | 50.5 | 863.5 | 72.7 % |
+| R32 | 2011.0 | 245.6 | 50.5 | 1714.6 | 70.3 % |
+| R410A | 1911.8 | 219.4 | 50.5 | 1641.6 | 69.4 % |
+| CO₂ | 2683.8 | 355.4 | 46.1 | 2270.2 | 62.4 % |
+
+固定吸吐出境界で0.23 s 運転し、最後に完了した1回転を比較しました。CO₂ は亜臨界の10回転目、他の4冷媒は11回転目です。表の各値は独立に丸めています。第15章の駆動収支には、一回転の間に残る回転子・ベーンの蓄積エネルギーの差も含まれます。
+
+![R134a 単体試験の最後の1回転における動力と損失](Resources/Reference/rotary_losses_R134a.png)
+
+**図2**　R134a の11回転目。横軸はその回転の開始からの経過時間です。負荷が高い区間では電磁トルクが増え、巻線銅損も増えます。軸受や端面油膜の損失は回転速度に応じて変化します。
+
+R134a の内訳は、銅損31.42 W、鉄損20.00 W、付帯18.00 W、軸受42.45 W、ベーン4.32 W、油膜3.76 W。吸入・吐出・室間漏れの圧損仕事率近似はそれぞれ16.41／77.46／7.16 W、漏れ絶対値の回転平均は0.533 g/s、体積効率は90.4 %でした。巻線抵抗と油粘度をゼロにした対照計算では両項がゼロとなり、入力は792.26 W から757.08 W に変わりました。
+
+既定の出力間隔は25 µs（許容誤差 $10^{-7}$）、CO₂ の損失例は質量収支を細かく検査するため12.5 µs（$3\times 10^{-8}$）です。各回転平均を出力波形から別途台形積分して照合し、質量、全圧縮機と駆動系のエネルギー収支を検査しました。5例での最大残差は冷媒質量 4.87e-08 kg、全圧縮機 0.0245 J、駆動系 0.00019 J でした。
+
+**実装と結果**　[単体の損失例題](Examples/RotaryCompressorLossTest.mo) ・ [5冷媒の全チャネルと検査残差](Resources/Reference/compressor_losses.csv) ・ [再実行手順](RotaryCompressor.md#損失評価)

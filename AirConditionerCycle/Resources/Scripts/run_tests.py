@@ -13,7 +13,7 @@ EXAMPLES = ("RatedCooling", "OutdoorTemperatureRamp", "CompressorReplacement")
 PACKAGE = Path(__file__).resolve().parents[2] / "package.mo"
 
 
-def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples", end_values=()):
+def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples", end_values=(), tolerance=1e-7):
     commands = []
     for env, setter in (("CC", "setCompiler"), ("CXX", "setCXXCompiler")):
         if os.environ.get(env):
@@ -30,7 +30,7 @@ def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"
     report_flag = f', simflags="-output={",".join(end_values)}"' if end_values else ""
     for name, stop, intervals, fields in cases:
         commands.append(f'simulate({namespace}.{name}, stopTime={stop}, '
-                        f'numberOfIntervals={intervals}, tolerance=1e-7, method="dassl", '
+                        f'numberOfIntervals={intervals}, tolerance={tolerance:g}, method="dassl", '
                         f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}"{report_flag});')
         commands.append('getErrorString();')
     (work / "tests.mos").write_text("\n".join(commands) + "\n", encoding="utf-8")

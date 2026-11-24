@@ -27,6 +27,40 @@ python Resources/Scripts/run_standalone_tests.py
 python Resources/Scripts/run_standalone_tests.py --fluid all --csv standalone.csv
 ```
 
+## 損失評価
+
+R134a の単体例は `AirConditionerCycle.Examples.RotaryCompressorLossTest` です。`Examples.RefrigerantTests` の `R290LossTest`、`R32LossTest`、`R410ALossTest`、`CO2SubcriticalLossTest` は、各冷媒の単体試験の境界条件を引き継ぎます。既存の単体例では `useDetailedLosses=true`、閉回路の `Examples.RotaryCooling` では `cycle.compressor.useDetailedLosses=true` で同じ機能を使えます。基本設定では第9章の一定モーター効率式、新しい設定では巻線銅損・鉄損の式を使います。
+
+| 見たい量 | OMEdit で選ぶ変数（単体例） |
+|---|---|
+| モーター・機械の瞬時損失合計 [W] | `compressor.losses.motorLoss`、`compressor.losses.mechanicalLoss` |
+| 項目別の瞬時／直前1回転平均 [W] | `compressor.losses.power`／`meanPower` を展開し、`copper`、`iron`、`auxiliary`、`bearing`、`vane`、`oilFilm` を選択 |
+| 吸入・吐出・室間漏れの圧損仕事率近似 [W] | 同じ配列の `suctionDrop`、`dischargeDrop`、`leakageDrop` |
+| 図示動力・筐体放熱・電気入力・理想動力 [W] | 同じ配列の `indicated`、`shellHeat`、`electric`、`isentropic` |
+| 室間漏れ絶対値の平均 [kg/s] | `compressor.losses.meanLeakRate` |
+| 吐出質量基準の体積効率、電気入力基準の等エントロピー効率 | `compressor.losses.volumetricEfficiency`、`compressor.losses.isentropicEfficiency` |
+
+回転平均は第1回転完了時から更新されます。短時間では圧縮機内のガス保有量や蓄熱も変わります。圧損仕事率は各部の上流体積流量×差圧で、冷媒の流れにすでに反映された圧損の規模を示します。電気入力を配分するときは、図示動力、モーター損失、機械摩擦、機構の蓄積変化を使います。シェル放熱の正方向は外気側です。
+
+対象機に合わせる際は `compressor.motor` の一相抵抗・トルク定数・基準鉄損、`compressor.shaft` の運転時油粘度・膜厚・内半径を設定します。巻線温度はシェル壁温で近似し、油膜はローラの公転すべりによる両端面の粘性せん断を扱います。別の試験から求めた軸受摩擦係数を使う場合は、その係数が端面損失を含むか確認してください。
+
+| 調整する量 | パラメータ（例題の `compressor` 以下） | 既定値 |
+|---|---|---:|
+| 相抵抗・トルク定数 | `motor.phaseResistance20`、`motor.torqueConstant` | 0.32 Ω／相、0.45 N·m/A |
+| 基準鉄損・基準回転数 | `motor.hysteresisReference`、`motor.eddyReference`、`motor.ironReferenceSpeed` | 12 W、8 W、50 rev/s |
+| 一定付帯損失 | `motor.idleLoss` | 18 W |
+| 油粘度・片側膜厚・ローラ内半径 | `shaft.oilViscosity`、`shaft.filmThickness`、`shaft.boreRadius` | 0.012 Pa·s、12 µm、9 mm |
+| 軸受摩擦・粘性抵抗 | `shaft.bearingFriction`、`shaft.viscous` | 0.11 N·m、0.00008 N·m·s/rad |
+| ベーン摩擦・粘性抵抗・先端すきま | `vane.slidingFriction`、`vane.damping`、`vane.tipGap` | 3 N、1.6 N·s/m、3 µm |
+
+パッケージのディレクトリで以下を実行すると、5冷媒の単体試験と、各回転平均・圧縮機全体・機械駆動系の収支検査を再現できます。`--fluid R134a` でR134aだけを試験できます。
+
+```sh
+python Resources/Scripts/run_standalone_tests.py --losses --fluid all --csv compressor_losses.csv
+```
+
+[物理方程式（第14～16章）](PhysicalEquations.md) ・ [5冷媒の損失・効率と収支残差](Resources/Reference/compressor_losses.csv)
+
 ## 部品と接続
 
 冷媒は **アキュームレータ → 吸入管 → シリンダ → 吐出リード弁 → 吐出マフラ → 高圧シェル → 吐出管** の順に流れます。モーター、偏心軸、ローラ、ベーンは機械コネクターで接続し、ローラの容積変化とシリンダの圧力を介して軸仕事を伝えます。配管、機械、熱、制御の接続は `Components.Rotary.RollingPistonCompressor` のダイアグラムで開けます。

@@ -10,6 +10,7 @@ model RotaryCompressorStandalone "詳細ロータリー圧縮機の単体試験�
   parameter Medium.AbsolutePressure dischargePressure=Medium.saturationPressure(318.15)
     "吐出管出口の絶対圧力";
   parameter SI.TemperatureDifference suctionSuperheat(min=0.1)=5 "境界の吸入過熱度";
+  parameter Boolean useDetailedLosses=false "損失評価を有効にする" annotation(Evaluate=true);
   parameter SI.Frequency speed(min=1)=50 "モーターの回転数指令 [rev/s]";
   parameter SI.Temperature ambientTemperature=308.15 "シェル周囲の温度";
   final parameter Medium.Temperature suctionTemperature=Medium.saturationTemperature(suctionPressure) + suctionSuperheat;
@@ -23,7 +24,7 @@ model RotaryCompressorStandalone "詳細ロータリー圧縮機の単体試験�
   Modelica.Fluid.Sources.Boundary_ph suction(redeclare package Medium=Medium,
     nPorts=1,p=suctionPressure,h=hSuction)
     annotation(Placement(transformation(extent={{-90,-12},{-66,12}})));
-  Components.Rotary.RollingPistonCompressor compressor(redeclare package Medium=Medium, speed=speed,
+  Components.Rotary.RollingPistonCompressor compressor(redeclare package Medium=Medium, speed=speed, useDetailedLosses=useDetailedLosses,
     accumulator(inletCheckValve=true,p_start=0.989*suctionPressure,h_start=hSuction),
     suctionPipe(outlet(p(start=0.989*suctionPressure))),
     cylinder(inlet(p(start=0.989*suctionPressure)),

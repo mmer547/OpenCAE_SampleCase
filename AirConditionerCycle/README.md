@@ -14,6 +14,10 @@ OMEdit で `AirConditionerCycle/package.mo` を開き、**Examples → RotaryCom
 
 既定は R134a です。他の冷媒は `Examples.RefrigerantTests` の `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` から選べます。試験時間は 0.23 s。プロットには `dischargeFlow`（kg/s）、`dischargeTemperature`（K）、`compressor.P_el`（W）、`compressor.reed.lift`（m）が使えます。[境界条件とコマンドラインでの再実行](RotaryCompressor.md#単体試験の実行)
 
+## 詳細圧縮機の損失を評価する
+
+OMEdit で `Examples.RotaryCompressorLossTest` を実行すると、瞬時値 `compressor.losses.power` と完了した直前1回転の平均 `compressor.losses.meanPower` をチャネル別に表示できます。巻線銅損・鉄損・一定付帯損失と、軸受・ベーン・ローラ端面油膜の摩擦は、電気入力・機械仕事・シェル発熱の収支に含まれます。吸吐出と室間漏れの圧損仕事率は流路ごとの診断値です。R290、R32、R410A、CO₂ は `Examples.RefrigerantTests` にある各 `LossTest` で選択できます。[設定と結果の読み方](RotaryCompressor.md#損失評価) ・ [物理方程式・第14～16章](PhysicalEquations.pdf) ・ [5冷媒の内訳CSV](Resources/Reference/compressor_losses.csv)
+
 ## OMEdit で動かす
 
 1. OpenModelica のライブラリマネージャーで **Modelica 4.1.0** と **ExternalMedia 4.1.1** をインストールします。OMShell を使う場合は下記のコマンドでも導入できます。ExternalMedia の公式配布 ZIP には CoolProp バックエンドのネイティブライブラリが入っています。[ExternalMedia 4.1.1 公式リリース](https://github.com/modelica-3rdparty/ExternalMedia/releases/tag/v4.1.1)

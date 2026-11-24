@@ -4,5 +4,6 @@ FixedFlowCompressor
 CompressorReplacement
 RotaryCooling
 RotaryCompressorStandalone
+RotaryCompressorLossTest
 AccumulatorWetInlet
 RefrigerantTests

@@ -8,6 +8,7 @@ import tempfile
 
 from rotary_checks import read_rows, require
 from run_tests import run_omc
+from loss_checks import LOSS_FIELDS, check_losses
 
 EXAMPLES = {
     "R134a": "RotaryCompressorStandalone",
@@ -22,14 +23,14 @@ FIELDS = ("dischargeFlow|dischargeTemperature|compressor[.](P_el|m_flow|E|charge
 PARAMETERS = ("suctionPressure", "dischargePressure", "hSuction", "suctionTemperature")
 
 
-def check_compressor(path, solver_log):
+def check_compressor(path, solver_log, intervals=9200):
     reported = re.search(r"^time=[^\n]*,suctionPressure=[^\n]+", solver_log, re.MULTILINE)
     require(reported is not None, "Missing reported boundary parameters")
     boundary = {name: float(value) for name, value in
                 (field.split("=") for field in reported.group().strip().split(","))}
     require(0 < boundary["suctionPressure"] < boundary["dischargePressure"], "Compressor boundary pressures")
     rows = read_rows(path)
-    require(len(rows) >= 9201 and rows[0]["time"] == 0 and rows[-1]["time"] == 0.23,
+    require(len(rows) >= intervals+1 and rows[0]["time"] == 0 and rows[-1]["time"] == 0.23,
             "Incomplete 0.23 s simulation")
     initial = rows[0]
     max_mass_error = max_energy_error = 0.0
@@ -51,7 +52,7 @@ def check_compressor(path, solver_log):
                        - delivery*row["compressor.outlet.h_outflow"])
         if i:
             dt = time - previous["time"]
-            require(0 <= dt <= 0.0000251, "Output time grid")
+            require(0 <= dt <= 0.23/intervals + 1e-9, "Output time grid")
             mass_integral += dt*(last_mass_rate + mass_rate)/2
             energy_integral += dt*(last_energy_rate + energy_rate)/2
             turn_electric += dt*(previous["compressor.P_el"] + electric)/2
@@ -86,6 +87,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--omc", default="omc")
     parser.add_argument("--fluid", choices=(*EXAMPLES, "all"), default="R134a")
+    parser.add_argument("--losses", action="store_true", help="run detailed loss examples and verify the loss breakdown")
     parser.add_argument("--csv", type=Path, help="save per-fluid boundary conditions and last-turn averages")
     args = parser.parse_args()
     fluids = EXAMPLES if args.fluid == "all" else [args.fluid]
@@ -93,9 +95,21 @@ def main():
     with tempfile.TemporaryDirectory() as work:
         for fluid in fluids:
             name = "AirConditionerCycle.Examples." + EXAMPLES[fluid]
+            fields = FIELDS
+            if args.losses:
+                name = name.removesuffix("Standalone") + "LossTest"
+                fields += "|" + LOSS_FIELDS
             namespace, short = name.rsplit(".", 1)
-            log = run_omc(args.omc, Path(work), [(short, 0.23, 9200, FIELDS)], namespace, PARAMETERS)
-            result = check_compressor(Path(work)/f"{short}_res.csv", log)
+            # Resolve the CO2 loss case's narrow flow pulses on the same grid as its experiment annotation.
+            intervals, tolerance = (18400, 3e-8) if args.losses and fluid == "CO2" else (9200, 1e-7)
+            log = run_omc(args.omc, Path(work), [(short, 0.23, intervals, fields)], namespace, PARAMETERS, tolerance)
+            trajectory = Path(work)/f"{short}_res.csv"
+            result = check_compressor(trajectory, log, intervals)
+            if args.losses:
+                result.update(check_losses(trajectory))
+                require(all(result[f"last_turn_{k}_W"] > 0 for k in
+                            ("copper", "iron", "bearing", "vane", "oilFilm", "suctionDrop", "dischargeDrop", "leakageDrop")),
+                        "Expected loss sources to be active in the nominal test")
             results.append(dict(refrigerant=fluid, **result))
             print(f"{fluid}: {result['completed_revolutions']} turns, "
                   f"{result['last_turn_electric_kW']:.3f} kW, {result['last_turn_discharge_kg_s']:.5f} kg/s")
