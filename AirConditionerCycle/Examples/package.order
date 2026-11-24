@@ -1,9 +1,12 @@
 RatedCooling
-OutdoorTemperatureRamp
-FixedFlowCompressor
-CompressorReplacement
-RotaryCooling
+AdiabaticRotaryStandalone
+AdiabaticRotaryCooling
 RotaryCompressorStandalone
 RotaryCompressorLossTest
-AccumulatorWetInlet
+RotaryCooling
 RefrigerantTests
+OutdoorTemperatureRamp
+CompressorReplacement
+FixedFlowCompressor
+AccumulatorWetInlet
+BaseClasses

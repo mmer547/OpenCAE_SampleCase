@@ -5,3 +5,8 @@ GasPocket
 FixedVolume
 Pipe
 pressureDropPower
+PartialCylinder
+PartialMotor
+ShaftMechanics
+VaneMechanics
+PartialRollingPiston

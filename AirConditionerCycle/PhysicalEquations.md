@@ -1,8 +1,8 @@
 # 空調用冷凍サイクルの物理方程式
 
-**AirConditionerCycle 1.4.0　技術資料**
+**AirConditionerCycle 1.5.0　技術資料**
 
-この資料は、冷媒状態から冷房能力と消費電力を求める式、およびローリングピストン式圧縮機の軸運動から吐出流量を求める式を、Modelica のクラスに対応づけたものです。標準圧縮機と詳細圧縮機は同じ冷凍回路に接続できます。
+この資料は、冷媒状態から冷房能力と消費電力を求める式、およびローリングピストン式圧縮機の軸運動から吐出流量を求める式を、Modelica のクラスに対応づけたものです。標準・断熱ロータリー・熱連成ロータリーを同じ回路で選べます。断熱版と熱連成版の違いは第17章にまとめました。
 
 | 調べたい内容 | 章 |
 |---|---|
@@ -15,6 +15,7 @@
 | 冷媒別の初期化、実行例、試験条件と照合結果 | 11・12 |
 | 圧縮機単体のリザーバ境界、入口逆止弁、開回路での試験 | 13 |
 | モーター・摩擦・流路の損失、モデルの校正、5冷媒の損失評価 | 14–16 |
+| 断熱ロータリーの冷媒・駆動系の保存則、熱連成版との違い | 17 |
 
 **単位と添字**　圧力 $p$ は絶対圧 [Pa]、温度 $T$ は [K]、比エンタルピー $h$ は [J/kg]、密度 $\rho$ は [kg/m³]、容積 $V$ は [m³]、エネルギーは [J]、熱流率・動力は [W] です。上付きの点は時間微分、$l,v$ は飽和液・飽和蒸気を表します。$\operatorname{clip}(z,a,b)=\min(b,\max(a,z))$ とします。$T$ の差は K と °C で同じ値です。
 
@@ -304,7 +305,7 @@ $$
 
 各室は第4章の可動容積式を解きます。$\dot V_A,\dot V_B$ は第6章、壁温 $T_w$ はシェルと共通で $G_w=0.45$ W/K（各室）です。漏れは両室を合計すると質量・エネルギー収支から相殺されます。
 
-**実装**　[Cylinder.mo](Components/Rotary/Cylinder.mo) ・ [massFlux.mo](Components/Rotary/BaseClasses/massFlux.mo) ・ [GasPocket.mo](Components/Rotary/BaseClasses/GasPocket.mo)
+**実装**　[シリンダの流動方程式](Components/Rotary/BaseClasses/PartialCylinder.mo) ・ [シリンダ壁](Components/Rotary/Cylinder.mo) ・ [massFlux.mo](Components/Rotary/BaseClasses/massFlux.mo) ・ [GasPocket.mo](Components/Rotary/BaseClasses/GasPocket.mo)
 
 ## 8　吐出リード弁・吐出マフラ・高圧シェル
 
@@ -333,7 +334,7 @@ $$
 
 吐出弁からのパルス流で室内の質量・圧力が変動し、出口絞りを通じて高圧シェルに流れます。音響管路は集中容積と抵抗に集約しています。
 
-### 高圧シェルのガスと壁
+### 高圧シェルのガスと壁（熱連成版）
 
 固定容積は 850 cm³、$p_i=p_o=p_g,\ h_o=h_g$。壁温 $T_w$ とガス温度 $T_g$ を別々に解き、筐体熱容量 $C_w=1100$ J/K、ガス側 $G_g=8$ W/K、外気側 $G_a=1.8$ W/K を使います。
 
@@ -396,13 +397,13 @@ $$
 
 この式の $m_v$ はベーン質量 9 g です。$k_v=1600$ N/m、$x_f=16$ mm、$b_v=1.6$ N·s/m、$F_s=3$ N、$v_0=0.02$ m/s。先端すきま $g_{\rm tip}=3$ µm と高さ $H=45.5$ mm から室間漏れ面積を定めます。ベーンの接触を幾何で拘束し、油膜の効果は有効すきま・摩擦係数に集約しています。
 
-**実装**　[Motor.mo](Components/Rotary/Motor.mo) ・ [EccentricShaft.mo](Components/Rotary/EccentricShaft.mo) ・ [Vane.mo](Components/Rotary/Vane.mo)
+**実装**　[電動機](Components/Rotary/BaseClasses/PartialMotor.mo) ・ [軸の機械系](Components/Rotary/BaseClasses/ShaftMechanics.mo) ・ [ベーンの機械系](Components/Rotary/BaseClasses/VaneMechanics.mo) ・ [熱連成モーター](Components/Rotary/Motor.mo)
 
 ## 10　圧縮機全体の保存則と1回転平均
 
 `RollingPistonCompressor` は11部品の組立モデルです。冷媒はアキュームレータ → 吸入管 → シリンダ → 吐出リード弁 → マフラ → シェル → 吐出管を通ります。モーターと偏心軸がローラを駆動し、ローラは容積ポートでシリンダと、並進フランジでベーンと結合します。
 
-### 蓄積量を測る境界
+### 熱連成版の蓄積量を測る境界
 
 圧縮機内に冷媒が蓄積する5容積の集合を $\mathcal C=\{\text{accumulator}, A,B,\text{muffler},\text{shell}\}$ とします。`charge` は5容積の冷媒質量、`E` はそれらの内部エネルギー、シェル壁、ベーン、回転子に蓄えたエネルギーの和です。$E_v,E_r$ の定義は第9章です。
 
@@ -576,7 +577,7 @@ $r_o=R-e$（既定値 19.5 mm）、$r_i=9$ mm、$e=4.5$ mm、$\delta=12$ µm、$
 
 機種固有の校正には、抵抗測定とトルク・電流データ、速度別の無負荷損失、油の運転時粘度とすきま寸法を使います。軸受摩擦と端面摩擦は異なる摺動面に割り当てます。上記既定値は代表値です。
 
-**実装**　[Motor.mo](Components/Rotary/Motor.mo) ・ [EccentricShaft.mo](Components/Rotary/EccentricShaft.mo) ・ [Vane.mo](Components/Rotary/Vane.mo)
+**実装**　[電動機](Components/Rotary/BaseClasses/PartialMotor.mo) ・ [軸の機械系](Components/Rotary/BaseClasses/ShaftMechanics.mo) ・ [ベーンの機械系](Components/Rotary/BaseClasses/VaneMechanics.mo) ・ [熱連成モーター](Components/Rotary/Motor.mo)
 
 ## 15　圧損・室間漏れと圧縮機の動力収支
 
@@ -643,3 +644,47 @@ R134a の内訳は、銅損31.42 W、鉄損20.00 W、付帯18.00 W、軸受42.45
 既定の出力間隔は25 µs（許容誤差 $10^{-7}$）、CO₂ の損失例は質量収支を細かく検査するため12.5 µs（$3\times 10^{-8}$）です。各回転平均を出力波形から別途台形積分して照合し、質量、全圧縮機と駆動系のエネルギー収支を検査しました。5例での最大残差は冷媒質量 4.87e-08 kg、全圧縮機 0.0245 J、駆動系 0.00019 J でした。
 
 **実装と結果**　[単体の損失例題](Examples/RotaryCompressorLossTest.mo) ・ [5冷媒の全チャネルと検査残差](Resources/Reference/compressor_losses.csv) ・ [再実行手順](RotaryCompressor.md#損失評価)
+
+
+## 17　断熱ロータリーの保存則とモデルの選び方
+
+標準圧縮機は第3章の効率と押しのけ容積からサイクル性能を求めます。断熱ロータリーは軸角ごとの圧力、弁リフト、漏れと損失を求めるモデルです。壁温、壁と冷媒の熱交換、外気への放熱を調べる場合は熱連成ロータリーを選びます。
+
+### 圧縮仕事と吐出冷媒温度
+
+断熱版はアキュームレータ、二つの作動室、マフラ、高圧シェルの各冷媒容積で $\dot Q_k=0$ とします。ポート $j$ の流量 $\dot m_j$ は流入を正、$h_j$ は実際に流れる冷媒の比エンタルピーです。内部漏れも作動室間の質量・エンタルピー輸送に含めます。
+
+$$
+M_k=\rho(p_k,h_k)V_k,\qquad U_k=M_k h_k-p_k V_k,
+$$
+$$
+\dot M_k=\sum_j \dot m_j,\qquad
+\dot U_k=\sum_j \dot m_j h_j-p_k\dot V_k .
+$$
+
+固定容積では $\dot V_k=0$、作動室では $\dot V_B=-\dot V_A$ です。図示動力は $P_i=-(p_A-p_B)\dot V_A$。吐出温度は出口の圧力と比エンタルピーから ExternalMedia の $T(p_2,h_2)$ で計算します。シェルは断熱のガス容積として圧力・エンタルピーを保持します。
+
+### 電動機・摩擦の損失と境界収支
+
+電磁トルクを $\tau_m$、角速度を $\omega$、軸受と油膜の摩擦トルクの和を $\tau_f$、ベーンの摩擦力と速度を $F_f,v$ とします。断熱版の詳細損失設定では一定相抵抗 $R_{op}=0.36\,\Omega$（代表値）と相電流実効値 $I=\tau_m/K_t$ を用い、銅損は $P_{Cu}=3R_{op}I^2$ です。鉄損・付帯損失・軸受摩擦・ベーン摩擦・端面油膜抵抗は第14章の式に従います。
+
+$$
+P_{loss}=(P_{el}-\tau_m\omega)+\tau_f\omega+F_f v.
+$$
+
+$P_{loss}$ は `driveLoss` に出力します。散逸先の固体・外気の温度はこのモデルの計算範囲外です。流路圧損と漏れの仕事率指標は第15章の診断値であり、$P_{loss}$ に加算すると二重計上になります。圧縮機の蓄積量 $E_c=\sum_k U_k+E_{rotor}+E_{vane}$ と全冷媒の内部エネルギーに対する独立な収支は次の通りです。
+
+$$
+\dot E_c=j_i h_1+j_o h_2+P_{el}-P_{loss},\qquad
+\sum_k \dot U_k=j_i h_1+j_o h_2+P_i.
+$$
+
+冷凍回路全体では $\dot E_c+\dot U_e+\dot U_d=\dot Q_{cool}-\dot Q_{rej}+P_{el}-P_{loss}$。蒸発器・凝縮器の熱収支は第2章に従います。熱連成版の $E_c$ は壁の熱容量を含み、第10章の境界収支を使います。
+
+**R134a による照合**　同じリザーバ境界で詳細損失を有効にすると、11回転目の平均電力は断熱版 789.64 W、熱連成版 792.26 W でした。断熱版の全冷媒エネルギー収支の最大積分残差は 0.00685 J です。別の照合では熱連成版の壁伝熱係数をゼロ、相抵抗を断熱版と同じ一定値に設定しました。0.046 s の共通出力時刻で、両モデルの作動室 A の圧力差は最大 0.99 Pa、電力差は 0.00015 W 未満でした。
+
+断熱版の単体例は5冷媒とも 0.23 s を完走しました。全出力時刻における質量残差の最大値は $7.11\times10^{-8}$ kg、冷媒だけのエネルギー収支と駆動系を含む収支の最大残差はいずれも 0.037 J 未満でした。
+
+**実装**　[組立と損失](Components/Rotary/AdiabaticRollingPistonCompressor.mo) ・ [共通機構](Components/Rotary/BaseClasses/PartialRollingPiston.mo) ・ [作動室](Components/Rotary/Adiabatic/Cylinder.mo) ・ [電動機](Components/Rotary/Adiabatic/Motor.mo) ・ [高圧シェル](Components/Rotary/Adiabatic/DischargePlenum.mo)
+
+**例題と結果**　[断熱版の単体例](Examples/AdiabaticRotaryStandalone.mo) ・ [断熱版の閉回路例](Examples/AdiabaticRotaryCooling.mo) ・ [単体の損失と収支](Resources/Reference/adiabatic_standalone.csv) ・ [閉回路の回転平均](Resources/Reference/adiabatic_cycle.csv)

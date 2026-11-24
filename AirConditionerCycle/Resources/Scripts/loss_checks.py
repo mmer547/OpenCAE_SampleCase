@@ -15,7 +15,7 @@ def channel(row, signal, name):
     return row[f"{REPORT}{signal}[{REPORT}Channel.{name}]"]
 
 
-def check_losses(path):
+def check_losses(path, adiabatic=False):
     rows = read_rows(path)
     previous_rates = None
     turn_integrals = {}
@@ -34,11 +34,18 @@ def check_losses(path):
         time = row["time"]
         require(all(v >= -1e-7 for k, v in rates.items() if k not in ("indicated", "shellHeat")),
                 f"Unexpected sign of a compressor loss or mass flow at {time}")
-        require(abs(motor + row["compressor.motor.heat.Q_flow"]) < 1e-6, "Motor heat rejection")
         omega = row["compressor.motor.w"]
         require(abs(rates["electric"] - row["compressor.motor.driveTorque"]*omega - motor) < 1e-6,
                 "Electrical-to-mechanical power split")
-        require(abs(rates["bearing"]+rates["oilFilm"] + row["compressor.shaft.heat.Q_flow"]) < 1e-6
+        if adiabatic:
+            shaft_loss = row["compressor.shaft.frictionTorque"]*omega
+            require(abs(row["compressor.driveLoss"]-motor-mechanical) < 1e-6
+                    and abs(rates["vane"]-row["compressor.vane.friction"]*row["compressor.vane.v"]) < 1e-6
+                    and abs(rates["shellHeat"]) < 1e-10, "Adiabatic drive losses and zero shell heat")
+        else:
+            shaft_loss = -row["compressor.shaft.heat.Q_flow"]
+            require(abs(motor + row["compressor.motor.heat.Q_flow"]) < 1e-6, "Motor heat rejection")
+        require(abs(rates["bearing"]+rates["oilFilm"] - shaft_loss) < 1e-6
                 and abs(rates["oilFilm"]-row["compressor.shaft.oilFilmTorque"]*omega) < 1e-6
                 and abs(mechanical-rates["bearing"]-rates["vane"]-rates["oilFilm"]) < 1e-6,
                 "Mechanical dissipation and generated heat")

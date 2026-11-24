@@ -20,7 +20,8 @@ def require(test, message):
         raise ValueError(message)
 
 
-def check_rotary(path, waveform_csv, stop_time=0.21, high_pressure_limit=math.inf):
+def check_rotary(path, waveform_csv, stop_time=0.21, high_pressure_limit=math.inf,
+                 boundary_loss="shell.Q_ambient"):
     rows = read_rows(path)
     expected_points = round(stop_time / 0.000025) + 1
     require(len(rows) >= expected_points and rows[0]["time"] == 0 and rows[-1]["time"] == stop_time,
@@ -39,7 +40,7 @@ def check_rotary(path, waveform_csv, stop_time=0.21, high_pressure_limit=math.in
                 f"Heat or power sign at {t} s")
         mass = c["charge"] + r["cycle.evaporator.charge"] + r["cycle.condenser.charge"]
         energy = c["E"] + r["cycle.evaporator.U"] + r["cycle.condenser.U"]
-        shaft_system_input = r["cycle.P_el"] - c["shell.Q_ambient"]
+        shaft_system_input = r["cycle.P_el"] - c[boundary_loss]
         rates = [c["m_flow"] + c["outlet.m_flow"],
                  shaft_system_input + c["m_flow"]*r["cycle.h1"] + c["outlet.m_flow"]*r["cycle.h2"],
                  shaft_system_input + r["cycle.Q_cooling"] - r["cycle.Q_rejected"]]

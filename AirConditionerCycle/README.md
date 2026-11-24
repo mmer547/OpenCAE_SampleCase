@@ -2,11 +2,21 @@
 
 R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器 → 膨張弁 → 蒸発器 → 圧縮機の順に標準の冷媒ポートで接続しています。室内 25 °C、室外 35 °C の設定では、600 秒時点の冷房能力は 2.996 kW、圧縮機消費電力は 0.745 kW、冷房 COP は 4.023 です。
 
-標準の押しのけ容積型に加え、11個の部品で組み立てたロータリー圧縮機を選べます。OMEdit で `AirConditionerCycle.Examples.RotaryCooling` を実行すると作動室圧力と吐出弁リフトを確認できます。内部配線は `Components.Rotary.RollingPistonCompressor` のダイアグラムにあります。[ロータリー圧縮機の部品・設定・試験結果](RotaryCompressor.md)
+## 圧縮機を選ぶ
 
-追加冷媒の実行例は `AirConditionerCycle.Examples.RefrigerantTests` にあります。R290・R32・R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界条件を用います。[冷媒別の条件と試験結果](RefrigerantTests.md)
+ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **AdiabaticRotaryStandalone** から始めてください。
 
-蒸発器・凝縮器の保存則、2種類の圧縮機、ロータリー圧縮機内部11部品の式は、各クラスの実装に対応づけています。[物理方程式の技術資料（PDF）](PhysicalEquations.pdf) ・ [編集用 Markdown](PhysicalEquations.md)
+| 調べたいこと | 圧縮機 | 単体試験 | 冷凍サイクル |
+|---|---|---|---|
+| 冷房能力・COP・外気温の影響 | 標準／押しのけ容積と効率で計算 | — | `RatedCooling` |
+| 作動室圧力・弁リフト・漏れ・電力損失 | 断熱ロータリー／軸角ごとに計算 | **`AdiabaticRotaryStandalone`** | `AdiabaticRotaryCooling` |
+| 上記に加えて筐体の温度・放熱・冷媒への熱移動 | 熱連成ロータリー／従来の詳細モデル | `RotaryCompressorLossTest` | `RotaryCooling` |
+
+断熱版の単体例では `compressor.cylinder.pocketA.p` が作動室圧力、`compressor.reed.lift` が吐出弁リフト、`compressor.driveLoss` が電動機・軸・ベーンの散逸動力です。吐出冷媒温度 `dischargeTemperature` は圧縮仕事と冷媒物性から求めます。両ロータリーの単体例を同じ吸入条件・背圧・回転数で比較できます。[ロータリーの部品と設定](RotaryCompressor.md)
+
+既定冷媒は R134a です。`Examples.RefrigerantTests` に R290・R32・R410A・CO₂ の単体例とサイクル例があります。CO₂ は亜臨界条件です。[冷媒別の例題と条件](RefrigerantTests.md)
+
+断熱版の保存則と損失の扱いは物理方程式の第17章、両ロータリーに共通の機構は第5～9章にまとめています。[物理方程式（PDF）](PhysicalEquations.pdf) ・ [編集用 Markdown](PhysicalEquations.md)
 
 ## 詳細圧縮機だけを実行する
 
@@ -42,7 +52,7 @@ installPackage(ExternalMedia, "4.1.1", exactMatch=true);
 
 熱交換器では飽和液と飽和蒸気が共存する固定容積を仮定します。各相の質量、冷媒内部エネルギー、壁の顕熱を考慮して圧力と液量の時間変化を解きます。空気温度は標準の熱ポートから与えます。初期蒸発温度は 7 °C、初期凝縮温度は 45 °C、初期液体体積率は蒸発器 0.20、凝縮器 0.45 です。初期充填量はこれらの条件と各機器の容積で決まります。
 
-`Q_cooling` は室内空気から取り去る熱量率、`Q_rejected` は室外空気への放熱量率です。COP は `Q_cooling / P_el` です。分母は圧縮機の電力のみで、標準の圧縮機ではモーター損失は冷媒の外に放散する想定です。ロータリー圧縮機ではシェルの熱収支に含めます。対象は亜臨界・正方向流れで両熱交換器に気液が共存する冷房運転です。サイクルの機器間配管は圧力損失をゼロとし、空気の除湿とファン電力は省略しています。ロータリー圧縮機の内部配管には圧力損失を設定しています。機器定数は実機データに合わせて変更できます。
+`Q_cooling` は室内空気から取り去る熱量率、`Q_rejected` は室外空気への放熱量率です。COP は `Q_cooling / P_el` です。分母は圧縮機の電力のみで、標準の圧縮機ではモーター損失は冷媒の外に放散する想定です。熱連成ロータリーでは摩擦・電動機の発熱をシェルの熱収支に含め、断熱ロータリーでは散逸動力を別に集計します。対象は亜臨界・正方向流れで両熱交換器に気液が共存する冷房運転です。サイクルの機器間配管は圧力損失をゼロとし、空気の除湿とファン電力は省略しています。ロータリー圧縮機の内部配管には圧力損失を設定しています。機器定数は実機データに合わせて変更できます。
 
 ## 圧縮機を差し替える
 

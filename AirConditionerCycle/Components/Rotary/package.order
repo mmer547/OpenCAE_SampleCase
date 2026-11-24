@@ -12,3 +12,5 @@ Shell
 DischargePipe
 LossReport
 RollingPistonCompressor
+Adiabatic
+AdiabaticRollingPistonCompressor

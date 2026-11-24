@@ -2,7 +2,19 @@
 
 R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮機と部品別ロータリー圧縮機で試験しました。冷媒物性は ExternalMedia 4.1.1 の CoolProp 7.2.0、実行環境は Linux x86-64、OpenModelica 1.27.2、Modelica 4.1.0 です。
 
-## OMEdit で実行する
+## 断熱ロータリーの例題
+
+| 冷媒 | 圧縮機単体（詳細損失あり） | 冷凍サイクル |
+|---|---|---|
+| R134a（`Examples` 直下） | `AdiabaticRotaryStandalone` | `AdiabaticRotaryCooling` |
+| R290 | `R290AdiabaticStandalone` | `R290AdiabaticCooling` |
+| R32 | `R32AdiabaticStandalone` | `R32AdiabaticCooling` |
+| R410A | `R410AAdiabaticStandalone` | `R410AAdiabaticCooling` |
+| CO₂（亜臨界） | `CO2SubcriticalAdiabaticStandalone` | `CO2SubcriticalAdiabaticCooling` |
+
+R134a 以外の例は `Examples.RefrigerantTests` にあります。単体例は吸入圧力と吐出背圧を指定し、冷凍サイクルでは蒸発器・凝縮器の状態から両圧力が決まります。単体例と閉回路では損失設定が異なります（単体は詳細損失、閉回路は効率による電動機モデル）。[単体での比較](Resources/Reference/adiabatic_standalone.csv) ・ [断熱版の冷凍サイクル](Resources/Reference/adiabatic_cycle.csv)
+
+## 標準圧縮機と熱連成ロータリーを OMEdit で実行する
 
 `package.mo` を開き、`AirConditionerCycle.Examples.RefrigerantTests` から実行例を選びます。各行の二つのモデルは同じ空気境界条件を使います。
 

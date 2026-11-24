@@ -23,7 +23,7 @@ FIELDS = ("dischargeFlow|dischargeTemperature|compressor[.](P_el|m_flow|E|charge
 PARAMETERS = ("suctionPressure", "dischargePressure", "hSuction", "suctionTemperature")
 
 
-def check_compressor(path, solver_log, intervals=9200):
+def check_compressor(path, solver_log, intervals=9200, boundary_loss="shell.Q_ambient"):
     reported = re.search(r"^time=[^\n]*,suctionPressure=[^\n]+", solver_log, re.MULTILINE)
     require(reported is not None, "Missing reported boundary parameters")
     boundary = {name: float(value) for name, value in
@@ -35,6 +35,8 @@ def check_compressor(path, solver_log, intervals=9200):
     initial = rows[0]
     max_mass_error = max_energy_error = 0.0
     mass_integral = energy_integral = 0.0
+    adiabatic = boundary_loss == "driveLoss"
+    gas_integral = max_gas_error = 0.0
     turn_start = 0.0
     turn_electric = turn_delivery = turn_temperature = 0.0
     min_lift, max_lift = math.inf, -math.inf
@@ -48,8 +50,18 @@ def check_compressor(path, solver_log, intervals=9200):
         require(inlet >= -1e-10 and delivery >= -1e-10 and reed_flow >= -1e-10, f"Reverse flow at {time}")
         require(-1e-8 <= lift <= 0.001001 and electric > 0 and temperature > 0, "Lift, power or temperature")
         mass_rate = inlet - delivery
-        energy_rate = (electric - row["compressor.shell.Q_ambient"] + inlet*boundary["hSuction"]
+        energy_rate = (electric - row[f"compressor.{boundary_loss}"] + inlet*boundary["hSuction"]
                        - delivery*row["compressor.outlet.h_outflow"])
+        if adiabatic:
+            gas_energy = row["compressor.E"] - row["compressor.motor.E_rotor"] - row["compressor.vane.E"]
+            indicated = row["compressor.losses.power[compressor.losses.Channel.indicated]"]
+            gas_rate = inlet*boundary["hSuction"] - delivery*row["compressor.outlet.h_outflow"] + indicated
+            if i:
+                gas_integral += (time - previous["time"])*(previous_gas_rate + gas_rate)/2
+                max_gas_error = max(max_gas_error, abs(gas_energy-initial_gas_energy-gas_integral))
+            else:
+                initial_gas_energy = gas_energy
+            previous_gas_rate = gas_rate
         if i:
             dt = time - previous["time"]
             require(0 <= dt <= 0.23/intervals + 1e-9, "Output time grid")
@@ -76,18 +88,25 @@ def check_compressor(path, solver_log, intervals=9200):
         previous, last_mass_rate, last_energy_rate = row, mass_rate, energy_rate
     require(completed >= 10 and max_mass_error < 2e-7 and max_energy_error < 0.12,
             f"Compressor balance or rotation count: {max_mass_error:g} kg, {max_energy_error:g} J, {completed} turns")
-    return dict(suction_MPa_abs=boundary["suctionPressure"]/1e6, discharge_MPa_abs=boundary["dischargePressure"]/1e6,
+    if adiabatic:
+        require(max_gas_error < 0.12, f"Adiabatic gas energy balance: {max_gas_error:g} J")
+    result = dict(suction_MPa_abs=boundary["suctionPressure"]/1e6, discharge_MPa_abs=boundary["dischargePressure"]/1e6,
                 suction_C=boundary["suctionTemperature"]-273.15, stop_s=rows[-1]["time"], completed_revolutions=completed,
                 last_turn_rpm=60/period, last_turn_electric_kW=mean_power/1000, last_turn_discharge_kg_s=mean_flow,
                 last_turn_discharge_C=mean_temperature-273.15, max_mass_error_kg=max_mass_error,
                 max_energy_error_J=max_energy_error)
+    if adiabatic:
+        result["max_gas_energy_error_J"] = max_gas_error
+    return result
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--omc", default="omc")
     parser.add_argument("--fluid", choices=(*EXAMPLES, "all"), default="R134a")
-    parser.add_argument("--losses", action="store_true", help="run detailed loss examples and verify the loss breakdown")
+    physics = parser.add_mutually_exclusive_group()
+    physics.add_argument("--adiabatic", action="store_true", help="run the adiabatic rotary examples with detailed loss evaluation")
+    physics.add_argument("--losses", action="store_true", help="run detailed loss examples and verify the loss breakdown")
     parser.add_argument("--csv", type=Path, help="save per-fluid boundary conditions and last-turn averages")
     args = parser.parse_args()
     fluids = EXAMPLES if args.fluid == "all" else [args.fluid]
@@ -99,14 +118,19 @@ def main():
             if args.losses:
                 name = name.removesuffix("Standalone") + "LossTest"
                 fields += "|" + LOSS_FIELDS
+            if args.adiabatic:
+                example = ("AdiabaticRotaryStandalone" if fluid == "R134a" else
+                           EXAMPLES[fluid].replace("Standalone", "AdiabaticStandalone"))
+                name = "AirConditionerCycle.Examples." + example
+                fields += "|" + LOSS_FIELDS + "|compressor[.](driveLoss|shaft[.]frictionTorque|vane[.](friction|v))"
             namespace, short = name.rsplit(".", 1)
             # Resolve the CO2 loss case's narrow flow pulses on the same grid as its experiment annotation.
-            intervals, tolerance = (18400, 3e-8) if args.losses and fluid == "CO2" else (9200, 1e-7)
+            intervals, tolerance = (18400, 3e-8) if (args.losses or args.adiabatic) and fluid == "CO2" else (9200, 1e-7)
             log = run_omc(args.omc, Path(work), [(short, 0.23, intervals, fields)], namespace, PARAMETERS, tolerance)
             trajectory = Path(work)/f"{short}_res.csv"
-            result = check_compressor(trajectory, log, intervals)
-            if args.losses:
-                result.update(check_losses(trajectory))
+            result = check_compressor(trajectory, log, intervals, "driveLoss" if args.adiabatic else "shell.Q_ambient")
+            if args.losses or args.adiabatic:
+                result.update(check_losses(trajectory, adiabatic=args.adiabatic))
                 require(all(result[f"last_turn_{k}_W"] > 0 for k in
                             ("copper", "iron", "bearing", "vane", "oilFilm", "suctionDrop", "dischargeDrop", "leakageDrop")),
                         "Expected loss sources to be active in the nominal test")

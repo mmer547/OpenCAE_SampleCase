@@ -1,6 +1,34 @@
 # ロータリー圧縮機
 
-単気筒のローリングピストン式を、高圧シェル型の流路でモデル化しました。冷媒は ExternalMedia / CoolProp の R134a です。OMEdit で `AirConditionerCycle.Examples.RotaryCooling` を実行し、`cycle.compressor` を展開すると部品ごとの結果を確認できます。[パッケージの開き方](README.md)
+**断熱版** `Components.Rotary.AdiabaticRollingPistonCompressor` と **熱連成版** `Components.Rotary.RollingPistonCompressor` は、同じ吸入・吐出ポート、ローラ形状、二つの作動室、リード弁と駆動機構を使います。両方とも電力、吐出流量、吐出冷媒温度を求めます。
+
+## 断熱版の単体試験
+
+OMEdit で **Examples → AdiabaticRotaryStandalone** を実行します。吸入圧力・吐出背圧・吸入過熱度・回転数を変更できます。5冷媒の単体例では詳細損失を有効にしています。比較対象は同じ損失設定の `RotaryCompressorLossTest` です。吸入から吐出までのダイアグラムを開くと、冷媒ポートと機械フランジをたどれます。
+
+- `compressor.cylinder.pocketA.p`、`compressor.reed.lift` で圧縮から吐出までを追います。
+- `dischargeFlow`、`dischargeTemperature`、`compressor.P_el` で吐出流量・温度・消費電力を読みます。
+- `compressor.driveLoss` は電動機、軸、ベーンで散逸した動力の合計 [W]。`compressor.losses.meanPower` は完了した直前1回転の各チャネル平均 [W] です。断熱版の `shellHeat` はゼロです。
+
+断熱版の作動室と高圧シェルは冷媒の質量・内部エネルギーを蓄えます。電気・機械の損失は冷媒へ戻さず、相抵抗 `motor.operatingResistance` を一定（既定 0.36 Ω）として扱います。熱連成版はシェル壁の熱容量、冷媒との熱交換、外気放熱、壁温による相抵抗の変化を計算します。両モデルとも蒸発器・凝縮器に接続できます。[物理方程式・第17章](PhysicalEquations.pdf)
+
+R134a で吸入 0.374627 MPa（過熱度 5 K）、吐出 1.159924 MPa、回転数指令 3,000 rpm をそろえた単体試験の結果です。値は 0.23 s の計算中に完了した11回転目の平均です。シェル壁の長時間の温度応答はこの比較の対象外です。
+
+| 詳細損失を有効にしたモデル | 消費電力 [W] | 吐出流量 [g/s] | 吐出冷媒温度 [°C] |
+|---|---:|---:|---:|
+| 断熱ロータリー | 789.6 | 22.48 | 61.71 |
+| 熱連成ロータリー | 792.3 | 22.57 | 61.76 |
+
+断熱版の全冷媒試験は、展開した `AirConditionerCycle` ディレクトリで実行します。
+
+```sh
+python Resources/Scripts/run_standalone_tests.py --adiabatic --fluid all --csv adiabatic_standalone.csv
+python Resources/Scripts/run_adiabatic_cycles.py --fluid all --csv adiabatic_cycle.csv
+```
+
+[単体試験の条件・結果・収支残差](Resources/Reference/adiabatic_standalone.csv) ・ [冷凍サイクルの結果](Resources/Reference/adiabatic_cycle.csv)
+
+以下の単体試験と損失内訳は熱連成版のものです。
 
 ## 単体試験の実行
 
