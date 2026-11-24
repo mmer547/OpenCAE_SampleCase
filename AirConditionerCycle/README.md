@@ -2,6 +2,10 @@
 
 R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器 → 膨張弁 → 蒸発器 → 圧縮機の順に標準の冷媒ポートで接続しています。室内 25 °C、室外 35 °C の設定では、600 秒時点の冷房能力は 2.996 kW、圧縮機消費電力は 0.745 kW、冷房 COP は 4.023 です。
 
+## 部品と例題を調べる
+
+部品名から、接続先・方程式・設定値・OMEdit で表示する変数を引けます。例題には運転条件と参照結果を併記しています。[コンポーネント別ガイド](PhysicalEquations.md#サイクルの機器) ／ [冷凍サイクルの例題](PhysicalEquations.md#冷凍サイクルの例題) ／ [単体例題](PhysicalEquations.md#圧縮機と部品の単体例題) ／ [冷媒別の例題](PhysicalEquations.md#冷媒別の例題) ／ [PDF 版](PhysicalEquations.pdf)
+
 ## 圧縮機を選ぶ
 
 ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **AdiabaticRotaryStandalone** から始めてください。
