@@ -16,9 +16,12 @@ ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Exa
 |---|---|---|---|
 | 冷房能力・COP・外気温の影響 | 標準／押しのけ容積と効率で計算 | — | `RatedCooling` |
 | 作動室圧力・弁リフト・漏れ・電力損失 | 断熱ロータリー／軸角ごとに計算 | **`AdiabaticRotaryStandalone`** | `AdiabaticRotaryCooling` |
+| 2気筒の吐出タイミング・共通軸の動力・合流後の流量 | 断熱ツインロータリー／単段並列、位相差180° | **`TwinRotaryStandalone`** | `TwinRotaryCooling` |
 | 上記に加えて筐体の温度・放熱・冷媒への熱移動 | 熱連成ロータリー／従来の詳細モデル | `RotaryCompressorLossTest` | `RotaryCooling` |
 
 断熱版の単体例では `compressor.cylinder.pocketA.p` が作動室圧力、`compressor.reed.lift` が吐出弁リフト、`compressor.driveLoss` が電動機・軸・ベーンの散逸動力です。吐出冷媒温度 `dischargeTemperature` は圧縮仕事と冷媒物性から求めます。両ロータリーの単体例を同じ吸入条件・背圧・回転数で比較できます。[ロータリーの部品と設定](RotaryCompressor.md)
+
+2気筒の各吐出弁の流量は `compressor.upper.reed.m_flow` と `compressor.lower.reed.m_flow`、共通吐出管の流量は単体例の `dischargeFlow` です。2気筒の合計行程容積は単気筒の既定値と同じ約 28 cm³/rev です。[ツインロータリーの構成](PhysicalEquations.md#ツインロータリーの構成と保存則) ／ [試験条件・結果](PhysicalEquations.md#ツインロータリーの実行例)
 
 既定冷媒は R134a です。`Examples.RefrigerantTests` に R290・R32・R410A・CO₂ の単体例とサイクル例があります。CO₂ は亜臨界条件です。[冷媒別の例題と条件](RefrigerantTests.md)
 

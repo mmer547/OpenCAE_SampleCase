@@ -1,6 +1,6 @@
 # 冷凍サイクルの部品・例題と物理方程式
 
-**AirConditionerCycle 1.5.0　コンポーネント・例題ガイド**
+**AirConditionerCycle 1.6.0　コンポーネント・例題ガイド**
 
 冷房能力を調べるときは `Examples.RatedCooling`、圧縮機の中で吸入・圧縮・吐出が起こる順序を調べるときは `Examples.AdiabaticRotaryStandalone` を開きます。前者では回路が吸入・吐出圧力を決め、後者では試験台で両圧力を指定します。
 
@@ -9,6 +9,8 @@
 図中の英字は OMEdit の**インスタンス名**です。例えば、圧縮機単体で作動室 A の圧力を表示するには `compressor.cylinder.pocketA.p`、閉回路なら `cycle.compressor.cylinder.pocketA.p` を選びます。部品解説で `reed.lift` と記した量は、単体例では `compressor.reed.lift` です。例題の節には、結果ブラウザーから選べる変数名を記します。圧力は絶対圧 [Pa]、温度は [K]、流量は [kg/s]、電力と熱流率は [W] です。
 
 **部品を探す**
+
+- [2気筒ロータリーの部品と接続](#ツインロータリーの構成と保存則) ／ [2気筒の単体例と冷凍回路](#ツインロータリーの実行例)
 
 - [サイクルの機器](#サイクルの機器) ／ [圧縮機の選択と組立](#圧縮機の選択と組立)
 - [アキュームレータ・吸入管・シリンダ](#吸入から作動室まで) ／ [リード弁・マフラ・シェル・吐出管](#吐出弁から吐出管まで)
@@ -257,7 +259,7 @@ OMEdit 上ではどちらの圧縮機でも `shell` や `motor` と表示され�
 
 `PartialRotaryBench` は `suction` と `discharge` に標準ライブラリの `Modelica.Fluid.Sources.Boundary_ph` を一つずつ使います。`nPorts=1` なので使うポートはどちらも `ports[1]` です。吸入側は `suction.ports[1] ↔ compressor.inlet`、吐出側は `compressor.outlet ↔ discharge.ports[1]` とつなぎます。境界の圧力は接続点に適用されます。境界に設定する比エンタルピーは、その境界が冷媒を供給する場合の値です。順方向の吐出温度は圧縮機出口の圧力と比エンタルピーから求めます。
 
-熱連成損失例の 0.030 s では `compressor.outlet.m_flow` が −0.02132 kg/s、吐出境界の `discharge.ports[1].m_flow` が +0.02132 kg/s でした。例題の `dischargeFlow` は後者と同じ向きで、吐出量を正に表示します。`inner Modelica.Fluid.System system` は標準流体部品が参照する共通の既定値を提供します。吸入圧力と背圧の指定先はそれぞれ `suctionPressure` と `dischargePressure` です。[境界・初期条件・出力の実装](Examples/BaseClasses/PartialRotaryBench.mo)
+熱連成損失例の 0.030 s では `compressor.outlet.m_flow` が −0.02132 kg/s、吐出境界の `discharge.ports[1].m_flow` が +0.02132 kg/s でした。例題の `dischargeFlow` は後者と同じ向きで、吐出量を正に表示します。`inner Modelica.Fluid.System system` は標準流体部品が参照する共通の既定値を提供します。吸入圧力と背圧の指定先はそれぞれ `suctionPressure` と `dischargePressure` です。[境界と出力](Examples/BaseClasses/PartialCompressorBench.mo)・[単気筒の初期条件](Examples/BaseClasses/PartialRotaryBench.mo)
 
 ### MassFlowSource_h　湿り吸入試験の抜き出し口
 
@@ -339,6 +341,7 @@ OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditio
 
 | 調べたい内容 | 章 |
 |---|---|
+| 2気筒の180°位相差、分岐・合流、2気筒分の収支、実行結果 | 末尾のツインロータリー各節 |
 | 圧力・流量・熱量の符号、冷房 COP、冷媒の状態点 | 1 |
 | 蒸発器・凝縮器の蓄積、標準圧縮機と膨張弁 | 2・3 |
 | ExternalMedia の物性、R410A の微分、圧力と比エンタルピーを状態に選ぶ理由 | 4 |
@@ -1023,3 +1026,46 @@ $$
 **実装**　[組立と損失](Components/Rotary/AdiabaticRollingPistonCompressor.mo) ・ [共通機構](Components/Rotary/BaseClasses/PartialRollingPiston.mo) ・ [作動室](Components/Rotary/Adiabatic/Cylinder.mo) ・ [電動機](Components/Rotary/Adiabatic/Motor.mo) ・ [高圧シェル](Components/Rotary/Adiabatic/DischargePlenum.mo)
 
 **例題と結果**　[断熱版の単体例](Examples/AdiabaticRotaryStandalone.mo) ・ [断熱版の閉回路例](Examples/AdiabaticRotaryCooling.mo) ・ [単体の損失と収支](Resources/Reference/adiabatic_standalone.csv) ・ [閉回路の回転平均](Resources/Reference/adiabatic_cycle.csv)
+
+## ツインロータリーの構成と保存則
+
+### TwinRotaryCompressor　共有する部品と各気筒に置く部品
+
+`accumulator.outlet` から冷媒を上下の `upper.inlet` と `lower.inlet` に分けます。各気筒は吸入管 → シリンダ → 吐出リード弁を通り、両弁の出口が共通の `muffler.inlet` に合流します。その先は断熱高圧シェル → 吐出管です。上下とも同じ吸入・吐出系に接続した単段並列で、各シリンダには吸入と圧縮の役割を交互に担う A・B の2室があります。[圧縮機と配線図](Components/Rotary/TwinRotaryCompressor.mo)
+
+### CylinderUnit　1気筒の容積と駆動
+
+各ユニットは `suctionPipe`、`cylinder`、`reed`、`roller`、`vane` を持ちます。二つのユニットに同じ半径 $R=24$ mm、偏心量 $e=4.5$ mm、各高さ $H=22.75$ mm を与えます。1気筒の行程容積は $V_d=\pi H[R^2-(R-e)^2]$ で約 14.0 cm³、1回転の合計は約 28.0 cm³ です。吸入管径、各リード弁の寸法とばね定数は既存部品の既定値を使います。単気筒との電力差には、並列流路の圧損や弁動作の違いも含まれます。各室の容積と漏れは従来の第6・7章、各リード弁の運動は第8章の式に従います。[気筒ユニット](Components/Rotary/Adiabatic/CylinderUnit.mo)
+
+共通の `motor` と `shaft` が上下のローラを駆動します。下側に入る標準部品 `Disc offset` は固定角 $\phi_l-\phi_u=\pi$ を与え、両フランジの角速度は一致します。共通軸から渡すトルクは上下の入力トルクの和。モーター損失と共通軸の軸受抵抗は各1回、ベーン摩擦は2本分、端面油膜抵抗はローラ2個の計4面分を加えます。軸は剛体で、たわみ・振動や機種固有の軸受荷重はモデルの対象外です。[角度オフセット](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Mechanics/Rotational/Components/Disc.mo)・[軸摩擦](Components/Rotary/BaseClasses/ShaftMechanics.mo)
+
+### 合流、図示動力と保存則
+
+各弁の吐出流量を正の $\dot m_u,\dot m_l$、比エンタルピーを $h_u,h_l$ とすると、マフラに入る質量は毎秒 $\dot m_u+\dot m_l$、運ばれるエネルギーは毎秒 $\dot m_u h_u+\dot m_l h_l$ です。合流点は `FluidPort` の流量保存と `stream` 混合で表現します。マフラとシェルに冷媒が蓄積されるため、各弁の流量和と共通吐出管の瞬時流量には差が出ます。
+
+2気筒の図示動力は $P_{ind}=-\sum_{i=u,l}(p_{i,A}-p_{i,B})\dot V_{i,A}$ です。総質量 $M$ は固定容器3個と作動室4個の冷媒質量の和。総エネルギー $E$ はその冷媒内部エネルギーに両ベーンの運動・ばねエネルギーと回転子の運動エネルギーを加えたものです。正の外部吸入・吐出流量を使うと、断熱圧縮機全体の収支は次式になります。
+
+$$
+\dot M=\dot m_{in}-\dot m_{out},\qquad
+\dot E=\dot m_{in}h_{in}-\dot m_{out}h_{out}+P_{el}-P_{driveLoss}.
+$$
+
+`useDetailedLosses=true` では `losses.meanPower` が上側ローラの完了回転ごとに更新されます。各気筒の図示動力は `upper.indicatedPower` と `lower.indicatedPower`、合計は `losses.power[indicated]` です。[損失の集計](Components/Rotary/LossReport.mo)
+
+## ツインロータリーの実行例
+
+### TwinRotaryStandalone　各弁の吐出を重ねる
+
+OMEdit で `Examples.TwinRotaryStandalone` を開き、0.23 s 計算します。R134a の既定値は吸入 0.37463 MPa、背圧 1.15992 MPa（ともに絶対圧）、吸入過熱度 5 K、回転数指令 3,000 rpm です。
+
+`compressor.upper.reed.m_flow` と `compressor.lower.reed.m_flow` を同じ図に表示すると、二つの吐出パルスを追えます。`dischargeFlow` は共通吐出管で測った流量です。[単体例](Examples/TwinRotaryStandalone.mo)・[試験台と出力](Examples/BaseClasses/PartialCompressorBench.mo)
+
+![R134a単体試験の最後の完了回転で、上下の吐出リード弁と共通吐出管を流れる質量流量](Resources/Reference/twin_discharge_R134a.png)
+
+### TwinRotaryCooling　冷凍回路に接続する
+
+`Examples.TwinRotaryCooling` は同じ圧縮機を標準冷凍回路に組み込みます。吸入・吐出圧力は蒸発器・凝縮器と一緒に解きます。0.21 s の計算中、`cycle.Q_cooling` と `cycle.P_el` は回路の冷房能力と電気入力、`cycle.compressor.upper.cylinder.pocketA.p` は上側作動室Aの瞬時圧力です。[閉回路例](Examples/TwinRotaryCooling.mo)
+
+R134a 単体例の最後の完了回転（11回転目）で、上下の弁はそれぞれ平均 11.52 g/s を吐出し、ピークの軸角差は約 180° でした。共通吐出管は平均 22.23 g/s、電気入力は平均 731.8 W です。この区間でもマフラとシェルの保有量が変化します。値は設定した寸法と運転初期条件に対する短時間の計算結果です。
+
+`Examples.RefrigerantTests` では R290、R32、R410A、亜臨界 CO₂ の各冷媒について、名前が `TwinStandalone` と `TwinCooling` で終わる例を選べます。CO₂ は蒸発 −10 °C、凝縮 8 °C で初期化し、室外を −10 °C とします。他の4冷媒は蒸発 7 °C、凝縮 45 °C、室外 35 °C、全冷媒で室内は 25 °C です。下側は開始時すでに半回転進んだ位置にあり、両室を吸入圧付近から始動させます。[冷媒別例題](Examples/RefrigerantTests.mo)・[再実行スクリプト](Resources/Scripts/run_twin_tests.py)

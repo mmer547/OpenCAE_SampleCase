@@ -1,5 +1,7 @@
 # 追加冷媒の実行試験
 
+ツインロータリーでは、例えば R32 の単体試験に `Examples.RefrigerantTests.R32TwinStandalone`、冷房回路に `R32TwinCooling` を使います。CO₂ のクラス名は `CO2SubcriticalTwinStandalone` と `CO2SubcriticalTwinCooling` です。[2気筒の例題と運転条件](PhysicalEquations.md#ツインロータリーの実行例)
+
 R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮機と部品別ロータリー圧縮機で試験しました。冷媒物性は ExternalMedia 4.1.1 の CoolProp 7.2.0、実行環境は Linux x86-64、OpenModelica 1.27.2、Modelica 4.1.0 です。
 
 ## 断熱ロータリーの例題
