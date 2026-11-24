@@ -20,10 +20,11 @@ def require(test, message):
         raise ValueError(message)
 
 
-def check_rotary(path, waveform_csv):
+def check_rotary(path, waveform_csv, stop_time=0.21, high_pressure_limit=math.inf):
     rows = read_rows(path)
-    require(len(rows) >= 8401 and rows[0]["time"] == 0 and rows[-1]["time"] == 0.21,
-            "RotaryCooling: incomplete 0.21 s trajectory")
+    expected_points = round(stop_time / 0.000025) + 1
+    require(len(rows) >= expected_points and rows[0]["time"] == 0 and rows[-1]["time"] == stop_time,
+            f"RotaryCooling: incomplete {stop_time} s trajectory")
     errors = [0.0, 0.0, 0.0]
     integral = [0.0, 0.0, 0.0]
     points = []
@@ -32,6 +33,10 @@ def check_rotary(path, waveform_csv):
         t = r["time"]
         rev = int(c["roller.revolutions"])
         require(all(math.isfinite(x) for x in r.values()), f"Non-finite rotary output at {t} s")
+        require(0 < r["cycle.pLow"] < r["cycle.pHigh"] < high_pressure_limit,
+                f"Cycle pressures at {t} s")
+        require(min(r["cycle.Q_cooling"], r["cycle.Q_rejected"], r["cycle.P_el"]) > 0,
+                f"Heat or power sign at {t} s")
         mass = c["charge"] + r["cycle.evaporator.charge"] + r["cycle.condenser.charge"]
         energy = c["E"] + r["cycle.evaporator.U"] + r["cycle.condenser.U"]
         shaft_system_input = r["cycle.P_el"] - c["shell.Q_ambient"]
@@ -91,6 +96,8 @@ def check_rotary(path, waveform_csv):
     print(f"RotaryCooling             {completed} complete rev, last full rev: "
           f"{rows[-1]['meanPower']:.2f} W, {rows[-1]['meanDelivery']:.5f} kg/s; "
           f"max cycle energy residual {errors[2]:.4f} J")
+    return dict(completed_revolutions=completed, last_revolution_rpm=60/duration,
+                electric_kW=rows[-1]["meanPower"]/1000, mass_flow_kg_s=rows[-1]["meanDelivery"])
 
 
 def check_wet_inlet(path):

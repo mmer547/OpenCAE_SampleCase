@@ -13,7 +13,7 @@ EXAMPLES = ("RatedCooling", "OutdoorTemperatureRamp", "CompressorReplacement")
 PACKAGE = Path(__file__).resolve().parents[2] / "package.mo"
 
 
-def run_omc(compiler, work):
+def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"):
     commands = []
     for env, setter in (("CC", "setCompiler"), ("CXX", "setCXXCompiler")):
         if os.environ.get(env):
@@ -22,12 +22,13 @@ def run_omc(compiler, work):
     for call in ('loadModel(Modelica, {"4.1.0"})',
                  'loadModel(ExternalMedia, {"4.1.1"})', f'loadFile("{package}")'):
         commands.append(f'if not {call} then print(getErrorString()); exit(1); end if;')
-    cases = [(name, 600, 300, ".*") for name in EXAMPLES] + [
-        ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),
-        ("AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
-    ]
+    if cases is None:
+        cases = [(name, 600, 300, ".*") for name in EXAMPLES] + [
+            ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),
+            ("AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
+        ]
     for name, stop, intervals, fields in cases:
-        commands.append(f'simulate(AirConditionerCycle.Examples.{name}, stopTime={stop}, '
+        commands.append(f'simulate({namespace}.{name}, stopTime={stop}, '
                         f'numberOfIntervals={intervals}, tolerance=1e-7, method="dassl", '
                         f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}");')
         commands.append('getErrorString();')

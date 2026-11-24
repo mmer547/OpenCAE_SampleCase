@@ -4,6 +4,8 @@ R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器
 
 標準の押しのけ容積型に加え、11個の部品で組み立てたロータリー圧縮機を選べます。OMEdit で `AirConditionerCycle.Examples.RotaryCooling` を実行すると作動室圧力と吐出弁リフトを確認できます。内部配線は `Components.Rotary.RollingPistonCompressor` のダイアグラムにあります。[ロータリー圧縮機の部品・設定・試験結果](RotaryCompressor.md)
 
+追加冷媒の実行例は `AirConditionerCycle.Examples.RefrigerantTests` にあります。R290・R32・R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界条件を用います。[冷媒別の条件と試験結果](RefrigerantTests.md)
+
 ## OMEdit で動かす
 
 1. OpenModelica のライブラリマネージャーで **Modelica 4.1.0** と **ExternalMedia 4.1.1** をインストールします。OMShell を使う場合は下記のコマンドでも導入できます。ExternalMedia の公式配布 ZIP には CoolProp バックエンドのネイティブライブラリが入っています。[ExternalMedia 4.1.1 公式リリース](https://github.com/modelica-3rdparty/ExternalMedia/releases/tag/v4.1.1)
