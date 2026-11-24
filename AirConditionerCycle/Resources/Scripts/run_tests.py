@@ -1,4 +1,4 @@
-"""Build the three cooling examples with omc and check the simulated trajectories."""
+"""Build the cooling cycle and rotary compressor examples with omc and check the simulated trajectories."""
 import argparse
 import csv
 import math
@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+
+from rotary_checks import ROTARY_FILTER, check_rotary, check_wet_inlet
 
 EXAMPLES = ("RatedCooling", "OutdoorTemperatureRamp", "CompressorReplacement")
 PACKAGE = Path(__file__).resolve().parents[2] / "package.mo"
@@ -20,15 +22,19 @@ def run_omc(compiler, work):
     for call in ('loadModel(Modelica, {"4.1.0"})',
                  'loadModel(ExternalMedia, {"4.1.1"})', f'loadFile("{package}")'):
         commands.append(f'if not {call} then print(getErrorString()); exit(1); end if;')
-    for name in EXAMPLES:
-        commands.append(f'simulate(AirConditionerCycle.Examples.{name}, stopTime=600, '
-                        f'numberOfIntervals=300, tolerance=1e-7, method="dassl", '
-                        f'outputFormat="csv", fileNamePrefix="{name}");')
+    cases = [(name, 600, 300, ".*") for name in EXAMPLES] + [
+        ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),
+        ("AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
+    ]
+    for name, stop, intervals, fields in cases:
+        commands.append(f'simulate(AirConditionerCycle.Examples.{name}, stopTime={stop}, '
+                        f'numberOfIntervals={intervals}, tolerance=1e-7, method="dassl", '
+                        f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}");')
         commands.append('getErrorString();')
     (work / "tests.mos").write_text("\n".join(commands) + "\n", encoding="utf-8")
     job = subprocess.run([compiler, "tests.mos"], cwd=work, stdout=subprocess.PIPE,
                          stderr=subprocess.STDOUT, encoding="utf-8", errors="replace")
-    if job.returncode or job.stdout.count("The simulation finished successfully.") != len(EXAMPLES):
+    if job.returncode or job.stdout.count("The simulation finished successfully.") != len(cases):
         raise SystemExit(job.stdout)
     print(subprocess.check_output([compiler, "--version"], text=True).strip())
 
@@ -100,11 +106,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--omc", default="omc", help="OpenModelica compiler executable")
     parser.add_argument("--csv", type=Path, help="save selected time series for all three cases")
+    parser.add_argument("--rotary-csv", type=Path, help="save the last two completed revolutions")
     args = parser.parse_args()
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         run_omc(args.omc, work)
         runs = [check_trajectory(name, work / f"{name}_res.csv") for name in EXAMPLES]
+        check_rotary(work / "RotaryCooling_res.csv", args.rotary_csv)
+        check_wet_inlet(work / "AccumulatorWetInlet_res.csv")
     rated, hot, swapped = [run[-1] for run in runs]
     require(2.85 < rated["cooling_kW"] < 3.15 and 3.9 < rated["COP"] < 4.2, "Rated operating point")
     require(abs(hot["outdoor_C"]-40) < 1e-6 and hot["pHigh_MPa"] > rated["pHigh_MPa"]*1.1
@@ -117,7 +126,7 @@ def main():
             writer.writeheader()
             for run in runs:
                 writer.writerows(run)
-    print("All three examples passed.")
+    print("All five examples passed.")
 
 
 if __name__ == "__main__":
