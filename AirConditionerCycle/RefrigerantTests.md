@@ -13,6 +13,8 @@ R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮�
 | R410A | `R410AStandard` | `R410ARotary` |
 | CO₂、亜臨界 | `CO2SubcriticalStandard` | `CO2SubcriticalRotary` |
 
+詳細圧縮機単体を運転する例は同じパッケージの `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` です。R134a の単体例はひとつ上の `Examples.RotaryCompressorStandalone` にあります。[単体試験の境界条件・実行方法](RotaryCompressor.md#単体試験の実行)
+
 ## 標準モデルの600秒時点
 
 室内は全例で 25 °C、圧縮機の指令回転数は 3,000 rpm、過熱度・過冷却度は各 5 K です。既存の機器寸法、圧縮機効率、熱交換器、弁を使いました。初期液体体積率は共通のため、初期充填質量は冷媒の密度に応じて変わります。COP の分母は圧縮機消費電力です。

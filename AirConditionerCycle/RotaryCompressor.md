@@ -2,6 +2,31 @@
 
 単気筒のローリングピストン式を、高圧シェル型の流路でモデル化しました。冷媒は ExternalMedia / CoolProp の R134a です。OMEdit で `AirConditionerCycle.Examples.RotaryCooling` を実行し、`cycle.compressor` を展開すると部品ごとの結果を確認できます。[パッケージの開き方](README.md)
 
+## 単体試験の実行
+
+`AirConditionerCycle.Examples.RotaryCompressorStandalone` をOMEditで実行します。吸入側は圧力と過熱度を指定するリザーバ、吐出側は背圧を指定するリザーバです。圧縮機内部では11部品の状態を解きます。吐出側リザーバの比エンタルピー設定は逆向きに供給する流体の値で、順方向の吐出温度は圧縮機の出口状態から計算します。
+
+| 設定項目 | R134a の既定値 |
+|---|---:|
+| `suctionPressure`（吸入絶対圧力） | 0.374627 MPa、飽和温度 7 °C に相当 |
+| `suctionSuperheat`（吸入過熱度） | 5 K、入口温度 12 °C |
+| `dischargePressure`（吐出絶対圧力） | 1.159924 MPa、飽和温度 45 °C に相当 |
+| `speed`（回転数指令） | 50 rev/s（3,000 rpm） |
+| `ambientTemperature`（シェル周囲温度） | 35 °C |
+
+運転中の状態を初期条件とし、0.23 s を 25 µs 間隔で出力します。`compressor.accumulator.inletCheckValve=true` により、アキュームレータ入口の差圧がゼロ以下になると入口流量をゼロにします。吸入流量と吐出流量の瞬時差は、圧縮機内の冷媒保有量の変化です。`compressor.cylinder.pocketA.p`、`compressor.reed.lift`、`dischargeFlow`、`compressor.P_el` を同じ時間軸でプロットすると、作動室の圧力上昇から吐出までを追えます。
+
+パラメータを変更する例として、R134a の吸入圧力を 0.400 MPa、吐出圧力を 1.250 MPa、吸入過熱度を 8 K、回転数指令を 55 rev/s に設定しました。0.23 s で12回転を完了し、最後の1回転の平均電力は 0.964 kW、平均吐出流量は 0.02604 kg/s でした。
+
+他の冷媒は `Examples.RefrigerantTests` の各 `Standalone` 例を使います。R290・R32・R410A は R134a と同じ飽和温度・過熱度で、それぞれの冷媒の境界圧力を計算します。CO₂ は飽和温度 −10／8 °C に対応する吸入／吐出圧力、入口温度 −5 °C、シェル周囲温度 −10 °C の設定です。
+
+展開した `AirConditionerCycle` ディレクトリで次のコマンドを実行すると、最初の行は R134a のみ、2行目は5冷媒で単体試験を実行します。結果は最後に完了した1回転の平均と圧縮機の質量・エネルギー収支です。[単体例題のソース](Examples/RotaryCompressorStandalone.mo) ・ [単体試験の集計CSV](Resources/Reference/standalone_compressors.csv)
+
+```sh
+python Resources/Scripts/run_standalone_tests.py
+python Resources/Scripts/run_standalone_tests.py --fluid all --csv standalone.csv
+```
+
 ## 部品と接続
 
 冷媒は **アキュームレータ → 吸入管 → シリンダ → 吐出リード弁 → 吐出マフラ → 高圧シェル → 吐出管** の順に流れます。モーター、偏心軸、ローラ、ベーンは機械コネクターで接続し、ローラの容積変化とシリンダの圧力を介して軸仕事を伝えます。配管、機械、熱、制御の接続は `Components.Rotary.RollingPistonCompressor` のダイアグラムで開けます。

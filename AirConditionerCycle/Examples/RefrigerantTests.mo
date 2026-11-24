@@ -73,5 +73,19 @@ package RefrigerantTests "R290・R32・R410A・CO₂ の冷房試験"
       wallStart=Refrigerant.temperature_ph(pH,hD));
     annotation(experiment(StartTime=0,StopTime=0.23,Interval=0.000025,Tolerance=1e-7));
   end CO2SubcriticalRotary;
-  annotation(Documentation(info="<html><p>室内温度は全例 25 °C。R290、R32、R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界運転を対象とします。CO₂ の臨界温度は 30.98 °C であり、外気 35 °C の放熱には高圧側ガスクーラが必要です。</p></html>"));
+  model R290Standalone "R290 ロータリー圧縮機単体"
+    extends RotaryCompressorStandalone(redeclare package Medium=Media.R290);
+  end R290Standalone;
+  model R32Standalone "R32 ロータリー圧縮機単体"
+    extends RotaryCompressorStandalone(redeclare package Medium=Media.R32);
+  end R32Standalone;
+  model R410AStandalone "R410A ロータリー圧縮機単体"
+    extends RotaryCompressorStandalone(redeclare package Medium=Media.R410A);
+  end R410AStandalone;
+  model CO2SubcriticalStandalone "CO₂ ロータリー圧縮機単体・亜臨界圧力条件"
+    extends RotaryCompressorStandalone(redeclare package Medium=Media.CO2,
+      suctionPressure=Medium.saturationPressure(263.15),dischargePressure=Medium.saturationPressure(281.15),
+      ambientTemperature=263.15);
+  end CO2SubcriticalStandalone;
+  annotation(Documentation(info="<html><p>冷凍サイクル例の室内温度は 25 °C。Standalone は吸入・吐出リザーバを使う圧縮機単体試験です。R290、R32、R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界運転を対象とします。CO₂ の臨界温度は 30.98 °C であり、外気 35 °C の放熱には高圧側ガスクーラが必要です。</p></html>"));
 end RefrigerantTests;

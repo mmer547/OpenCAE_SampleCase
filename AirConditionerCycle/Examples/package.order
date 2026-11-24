@@ -3,5 +3,6 @@ OutdoorTemperatureRamp
 FixedFlowCompressor
 CompressorReplacement
 RotaryCooling
+RotaryCompressorStandalone
 AccumulatorWetInlet
 RefrigerantTests

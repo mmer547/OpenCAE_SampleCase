@@ -3,12 +3,14 @@ model Accumulator "吸入アキュームレータ。気液平衡・上部ガス�
   import SI = Modelica.Units.SI;
   extends BaseClasses.FixedVolume(V=0.00055, p_start=370500, h_start=407250);
   parameter SI.Area inletArea(min=1e-8)=0.000065 "入口の有効流路面積";
+  parameter Boolean inletCheckValve=false "入口で逆流を遮断する" annotation(Evaluate=true);
   Medium.SaturationProperties sat;
   SI.Mass liquidMass "容器内に分離保持した液冷媒";
   Real quality(unit="1") "容器内の蒸気質量率";
 equation
   m_flow = inletArea*sqrt(2*Medium.density_ph(inlet.p,h_in))*
-    Modelica.Fluid.Utilities.regRoot(inlet.p-gas.p, 40);
+    Modelica.Fluid.Utilities.regRoot(
+      if inletCheckValve then max(0,inlet.p-gas.p) else inlet.p-gas.p, 40);
   outlet.p = gas.p;
   sat = Medium.setSat_p(gas.p);
   quality = min(1, max(0, (gas.h - Medium.bubbleEnthalpy(sat))/

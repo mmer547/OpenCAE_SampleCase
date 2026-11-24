@@ -13,7 +13,7 @@ EXAMPLES = ("RatedCooling", "OutdoorTemperatureRamp", "CompressorReplacement")
 PACKAGE = Path(__file__).resolve().parents[2] / "package.mo"
 
 
-def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"):
+def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples", end_values=()):
     commands = []
     for env, setter in (("CC", "setCompiler"), ("CXX", "setCXXCompiler")):
         if os.environ.get(env):
@@ -27,10 +27,11 @@ def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"
             ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),
             ("AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
         ]
+    report_flag = f', simflags="-output={",".join(end_values)}"' if end_values else ""
     for name, stop, intervals, fields in cases:
         commands.append(f'simulate({namespace}.{name}, stopTime={stop}, '
                         f'numberOfIntervals={intervals}, tolerance=1e-7, method="dassl", '
-                        f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}");')
+                        f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}"{report_flag});')
         commands.append('getErrorString();')
     (work / "tests.mos").write_text("\n".join(commands) + "\n", encoding="utf-8")
     job = subprocess.run([compiler, "tests.mos"], cwd=work, stdout=subprocess.PIPE,
@@ -38,6 +39,7 @@ def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"
     if job.returncode or job.stdout.count("The simulation finished successfully.") != len(cases):
         raise SystemExit(job.stdout)
     print(subprocess.check_output([compiler, "--version"], text=True).strip())
+    return job.stdout
 
 
 def require(ok, message):

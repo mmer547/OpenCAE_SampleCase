@@ -8,6 +8,12 @@ R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器
 
 蒸発器・凝縮器の保存則、2種類の圧縮機、ロータリー圧縮機内部11部品の式は、各クラスの実装に対応づけています。[物理方程式の技術資料（PDF）](PhysicalEquations.pdf) ・ [編集用 Markdown](PhysicalEquations.md)
 
+## 詳細圧縮機だけを実行する
+
+OMEdit で `AirConditionerCycle/package.mo` を開き、**Examples → RotaryCompressorStandalone** を選んでシミュレーションを実行します。ダイアグラムは吸入リザーバ、11部品のロータリー圧縮機、吐出リザーバで構成されます。吸入圧力・過熱度・吐出背圧と回転数指令を変更すると、流量と消費電力の応答を調べられます。
+
+既定は R134a です。他の冷媒は `Examples.RefrigerantTests` の `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` から選べます。試験時間は 0.23 s。プロットには `dischargeFlow`（kg/s）、`dischargeTemperature`（K）、`compressor.P_el`（W）、`compressor.reed.lift`（m）が使えます。[境界条件とコマンドラインでの再実行](RotaryCompressor.md#単体試験の実行)
+
 ## OMEdit で動かす
 
 1. OpenModelica のライブラリマネージャーで **Modelica 4.1.0** と **ExternalMedia 4.1.1** をインストールします。OMShell を使う場合は下記のコマンドでも導入できます。ExternalMedia の公式配布 ZIP には CoolProp バックエンドのネイティブライブラリが入っています。[ExternalMedia 4.1.1 公式リリース](https://github.com/modelica-3rdparty/ExternalMedia/releases/tag/v4.1.1)

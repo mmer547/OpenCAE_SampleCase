@@ -1,6 +1,6 @@
 # 空調用冷凍サイクルの物理方程式
 
-**AirConditionerCycle 1.2.0　技術資料**
+**AirConditionerCycle 1.3.0　技術資料**
 
 この資料は、冷媒状態から冷房能力と消費電力を求める式、およびローリングピストン式圧縮機の軸運動から吐出流量を求める式を、Modelica のクラスに対応づけたものです。標準圧縮機と詳細圧縮機は同じ冷凍回路に接続できます。
 
@@ -13,6 +13,7 @@
 | モーター、偏心軸、ベーンの力・トルク・損失 | 9 |
 | 圧縮機と回路全体の保存則、1回転の平均 | 10 |
 | 冷媒別の初期化、実行例、試験条件と照合結果 | 11・12 |
+| 圧縮機単体のリザーバ境界、入口逆止弁、開回路での試験 | 13 |
 
 **単位と添字**　圧力 $p$ は絶対圧 [Pa]、温度 $T$ は [K]、比エンタルピー $h$ は [J/kg]、密度 $\rho$ は [kg/m³]、容積 $V$ は [m³]、エネルギーは [J]、熱流率・動力は [W] です。上付きの点は時間微分、$l,v$ は飽和液・飽和蒸気を表します。$\operatorname{clip}(z,a,b)=\min(b,\max(a,z))$ とします。$T$ の差は K と °C で同じ値です。
 
@@ -496,3 +497,44 @@ CO₂ の臨界温度は 30.9782 °C です。凝縮器内の気液共存を前�
 検査の対象は方程式の保存則とモデルの応答です。実機の性能曲線への校正、空気側の湿分・着霜、R410A の組成変化、CO₂ 遷臨界運転はこの試験の対象外です。再現には同梱の `Resources/Scripts/run_tests.py` と `run_refrigerant_tests.py` を使用できます。
 
 **試験記録**　[R134a の結果](Resources/Reference/results.csv) ・ [ロータリーの波形](Resources/Reference/rotary_revolutions.csv) ・ [追加4冷媒の結果](Resources/Reference/refrigerants.csv) ・ [冷媒別の実行手順](RefrigerantTests.md)
+
+## 13　詳細圧縮機の単体運転
+
+`RotaryCompressorStandalone` は第5–10章の11部品を備える圧縮機を、圧力境界の間で運転する例です。左の吸入境界からアキュームレータへ流れ、吐出管から右の背圧境界へ流れます。標準の境界クラスは両側とも `Modelica.Fluid.Sources.Boundary_ph` です。
+
+### 指定する量と計算する量
+
+外部の吸入・吐出圧力を $p_s,p_d$、吸入過熱度を $\Delta T_s$ とすると、吸入境界は $p_s$ と次の $h_s$ を与えます。吐出境界は $p_d$ を与え、圧縮機が吐出比エンタルピー $h_o$ と流量 $-j_o$ を決めます。
+
+$$
+T_{\rm in}=T_{\rm sat}(p_s)+\Delta T_s,\qquad h_s=h(p_s,T_{\rm in}),\qquad
+T_{\rm out}=T(p_d,h_o),\qquad \dot m_{\rm out}=-j_o .
+$$
+
+吐出側リザーバの設定エンタルピーはリザーバから出る流体に用いる値です。順方向に運転するときの $T_{\rm out}$ は `dischargeTemperature`、$\dot m_{\rm out}$ は `dischargeFlow` で確認できます。吸入・吐出流量は各瞬間で異なり、その差が圧縮機内の冷媒質量を変えます。
+
+この例ではアキュームレータ入口の逆止弁を有効にします。第5章の入口流量式に $\Delta p_+=\max(0,p_s-p_g)$ を用いると、$p_g\geq p_s$ で吸入は一時的に止まります。圧縮機部品の既定設定は `inletCheckValve=false` です。
+
+$$
+j_i=A_i\sqrt{2\rho(p_s,h_s)}\,R(\Delta p_+,40\,{\rm Pa}),\quad
+\dot M_c=j_i+j_o,\quad
+\dot E_c=P_{\rm el}-\dot Q_{\rm amb}+j_i h_s+j_o h_o .
+$$
+
+### 初期状態と実行条件
+
+吸入ガスの初期比エンタルピーを $h_s$、吐出側初期値を $h_D=h_s+[h(p_d,s(p_s,h_s))-h_s]/0.72$ とします。アキュームレータと室 B の初期圧力はそれぞれ $0.989p_s,0.988p_s$、室 A・マフラ・シェルは $1.030p_d,1.025p_d,1.012p_d$。シェル壁温は $T(p_d,h_D)$ に初期化します。運転中は作動室と機構の式から状態が進みます。
+
+既定の R134a は $p_s=0.374627$ MPa、$p_d=1.159924$ MPa、$\Delta T_s=5$ K、$T_{\rm in}=12$ °C、回転数指令 50 rev/s、シェル周囲 35 °C です。追加冷媒の例は `RefrigerantTests` 内にあり、CO₂ には −10／8 °C の飽和圧力を使います。出力間隔は 25 µs、計算時間は 0.23 s です。第10章の1回転平均と上の開回路収支を、シミュレーションの出力から積分して検査します。
+
+単体試験で完了した最後の1回転の平均を示します。CO₂ の圧力条件とシェル周囲温度は第11章の亜臨界試験に合わせています。
+
+| 冷媒 | 完了回転数 | 平均電力 [kW] | 平均吐出流量 [kg/s] | 平均吐出温度 [°C] |
+|---|---:|---:|---:|---:|
+| R134a | 11 | 0.808 | 0.02257 | 61.8 |
+| R290 | 11 | 1.018 | 0.01572 | 61.1 |
+| R32 | 11 | 1.954 | 0.03377 | 90.2 |
+| R410A | 11 | 1.874 | 0.04702 | 74.0 |
+| CO₂ | 10 | 2.578 | 0.08493 | 34.7 |
+
+**実装と結果**　[RotaryCompressorStandalone.mo](Examples/RotaryCompressorStandalone.mo) ・ [RefrigerantTests.mo](Examples/RefrigerantTests.mo) ・ [単体試験の集計](Resources/Reference/standalone_compressors.csv)
