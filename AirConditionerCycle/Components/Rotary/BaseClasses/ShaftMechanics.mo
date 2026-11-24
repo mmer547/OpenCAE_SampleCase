@@ -10,6 +10,7 @@ model ShaftMechanics "偏心軸のトルク伝達と摩擦"
     annotation(Placement(transformation(extent={{90,-10},{110,10}})));
   SI.AngularVelocity w;
   parameter Boolean useOilFilm=false "ローラ両端面の公転によるせん断を加える" annotation(Evaluate=true);
+  parameter Integer facePairs(min=1)=1 "軸に取り付けたローラの端面対の数";
   parameter SI.DynamicViscosity oilViscosity(min=0)=0.012 "運転温度での油粘度";
   parameter SI.Length filmThickness(min=1e-8)=12e-6 "片面の油膜厚さ";
   parameter SI.Radius faceRadius(min=1e-6)=0.0195 "ローラ外半径";
@@ -23,7 +24,7 @@ equation
   drive.phi = crank.phi;
   w = der(drive.phi);
   bearingTorque = bearingFriction*tanh(w/1.0) + viscous*w;
-  oilFilmTorque = if useOilFilm then 2*Modelica.Constants.pi*(faceRadius^2-boreRadius^2)
+  oilFilmTorque = if useOilFilm then facePairs*2*Modelica.Constants.pi*(faceRadius^2-boreRadius^2)
     *oilViscosity*eccentricity^2*w/filmThickness else 0;
   oilFilmLoss = oilFilmTorque*w;
   frictionTorque = bearingTorque + oilFilmTorque;

@@ -139,5 +139,39 @@ package RefrigerantTests "R290・R32・R410A・CO₂ の冷房試験"
       suctionPressure=Medium.saturationPressure(263.15), dischargePressure=Medium.saturationPressure(281.15));
     annotation(experiment(StartTime=0,StopTime=0.23,Interval=0.0000125,Tolerance=3e-8));
   end CO2SubcriticalAdiabaticStandalone;
+
+  model R290TwinStandalone
+    extends TwinRotaryStandalone(redeclare package Medium=Media.R290);
+  end R290TwinStandalone;
+
+  model R290TwinCooling
+    extends TwinRotaryCooling(cycle(redeclare package Medium=Media.R290));
+  end R290TwinCooling;
+
+  model R32TwinStandalone
+    extends TwinRotaryStandalone(redeclare package Medium=Media.R32);
+  end R32TwinStandalone;
+
+  model R32TwinCooling
+    extends TwinRotaryCooling(cycle(redeclare package Medium=Media.R32));
+  end R32TwinCooling;
+
+  model R410ATwinStandalone
+    extends TwinRotaryStandalone(redeclare package Medium=Media.R410A);
+  end R410ATwinStandalone;
+
+  model R410ATwinCooling
+    extends TwinRotaryCooling(cycle(redeclare package Medium=Media.R410A));
+  end R410ATwinCooling;
+
+  model CO2SubcriticalTwinStandalone
+    extends TwinRotaryStandalone(redeclare package Medium=Media.CO2,
+      suctionPressure=Medium.saturationPressure(263.15), dischargePressure=Medium.saturationPressure(281.15));
+  end CO2SubcriticalTwinStandalone;
+
+  model CO2SubcriticalTwinCooling
+    extends TwinRotaryCooling(outdoor(T=263.15), cycle(redeclare package Medium=Media.CO2,
+      evaporator(T_start=263.15), condenser(T_start=281.15)));
+  end CO2SubcriticalTwinCooling;
   annotation(Documentation(info="<html><p>冷凍サイクル例の室内温度は 25 °C。Standalone は吸入・吐出リザーバを使う圧縮機単体試験です。R290、R32、R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界運転を対象とします。CO₂ の臨界温度は 30.98 °C であり、外気 35 °C の放熱には高圧側ガスクーラが必要です。</p></html>"));
 end RefrigerantTests;
