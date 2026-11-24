@@ -6,6 +6,8 @@ R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器
 
 追加冷媒の実行例は `AirConditionerCycle.Examples.RefrigerantTests` にあります。R290・R32・R410A は外気 35 °C、CO₂ は外気 −10 °C の亜臨界条件を用います。[冷媒別の条件と試験結果](RefrigerantTests.md)
 
+蒸発器・凝縮器の保存則、2種類の圧縮機、ロータリー圧縮機内部11部品の式は、各クラスの実装に対応づけています。[物理方程式の技術資料（PDF）](PhysicalEquations.pdf) ・ [編集用 Markdown](PhysicalEquations.md)
+
 ## OMEdit で動かす
 
 1. OpenModelica のライブラリマネージャーで **Modelica 4.1.0** と **ExternalMedia 4.1.1** をインストールします。OMShell を使う場合は下記のコマンドでも導入できます。ExternalMedia の公式配布 ZIP には CoolProp バックエンドのネイティブライブラリが入っています。[ExternalMedia 4.1.1 公式リリース](https://github.com/modelica-3rdparty/ExternalMedia/releases/tag/v4.1.1)
