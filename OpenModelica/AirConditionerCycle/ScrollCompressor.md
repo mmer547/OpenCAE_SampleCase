@@ -57,6 +57,127 @@ $L_t$ は対称二室分の有効歯先長、$H$ はラップ高さ、$N_f$ は�
 
 **オルダム継手。** 直交する二方向 $k=x,y$ の速度 $v_k=\dot k$ に対し $F_k=c v_k+F_c\tanh(v_k/v_0)$、$v_0=0.02$ m/s とし、$P_{\rm Oldham}=F_xv_x+F_yv_y$ を求めます。公転質量の蓄積エネルギーは $m_o e_o^2\dot\theta^2/2$ です。電動機損失・軸受摩擦・継手摩擦をまとめた `driveLoss` は機外への散逸とします。ラップの弾性変形、軸方向の押付け・背圧、油と冷媒の二相漏れ、壁との伝熱は対象外です。
 
+## 角度から室番号と開口面積を決める
+
+`WrapGeometry` の $i=1,\ldots,4$ は冷媒を保持する室対番号です。公転回数 $n=\lfloor\theta/(2\pi)\rfloor$、位相 $u=\theta/(2\pi)-n$ とすると、室対 $i$ の段階は $j_i=1+\operatorname{mod}(n+i-1,4)$。段階が変わっても `pocket[i]` の質量とエネルギーは引き継ぎます。[段階番号と四つの容積ポート](Components/Scroll/WrapGeometry.mo)
+
+| 段階 $j$ | 一公転での容積 | 冷媒が出入りできる経路 |
+|---|---|---|
+| 1　吸入 | $V_0\to V_s$ | 外周の吸入口、段階2との漏れ |
+| 2　圧縮前半 | $V_s\to (V_s+V_o)/2$ | 段階1・3との漏れ |
+| 3　圧縮後半 | $(V_s+V_o)/2\to V_o$ | 段階2・4との漏れ |
+| 4　中央吐出 | $V_o\to V_0$ | 中央室への双方向ポート、段階3との漏れ |
+
+$\Delta K_j=K_{j+1}-K_j$、$\omega=\dot\theta$ と置くと、`volumeRate[i]` に渡す容積速度 [m³/s] は $\Delta K_{j_i} f'(u)\omega/(2\pi)$ です。`ramp` を $a$、`portRamp` を $b$ としたときの勾配と開口率 $o$ は次式です。$o$ は吸入中と吐出中の室が共有し、該当する段階だけに掛けます。
+
+$$
+f'(u)=\frac{1}{1-a}
+\begin{cases}u/a&u<a,\\1&a\le u\le 1-a,\\(1-u)/a&u>1-a,\end{cases}
+\qquad
+o(u)=\sin^2\!\left[\frac{\pi}{2}\max\!\left(0,\min\!\left(1,\frac{\min(u,1-u)}{b}\right)\right)\right].
+$$
+
+$\sum_j\Delta K_j=0$ なので四室の総容積は一定です。$\theta=2\pi n$ では $o=0$、$\dot V_i=0$ となり、次の段階が同じ容積から始まります。`Dimensions` の既定値では $e_o=4.226$ mm、$(V_0,V_s,(V_s+V_o)/2,V_o)=(0.700,28.700,19.869,11.038)$ cm³。初期検査は $e_o>0,\ V_o>V_0$ です。$V_s/V_o$ は幾何学的な容積比で、開口時の圧力比は冷媒物性・流入出・漏れから求まります。[寸法の定義](Components/Scroll/Dimensions.mo)
+
+## 外周吸入口から中央吐出室までの収支
+
+`PocketSet` の外周吸入口の絶対圧・密度を $p_s,\rho_s$、中央室を $p_c,\rho_c$、各室を $p_i,\rho_i$ とします。$G(p_a,p_b,\rho_a)$ は正方向のノズル質量流束で、$p_b\ge p_a$ でゼロ、臨界圧力比以下でチョークします。双方向の通路は、差圧の向きで上流密度を選ぶ符号付き流束 $G^\pm$ を使います。[ノズル流束とゼロ差圧での平滑化](PhysicalEquations.md#吸入漏れ吐出弁に共通のノズル式) ／ [作動室の流路実装](Components/Scroll/PocketSet.mo)
+
+$$
+G^\pm(a,b)=
+\begin{cases}
+G(p_a,p_b,\rho_a)&p_a\ge p_b,\\
+-G(p_b,p_a,\rho_b)&p_a<p_b .
+\end{cases}
+$$
+
+$s_i$ [kg/s] は外周から室への流入、$d_i$ [kg/s] は室から中央へ向かう流量です。$A_s=110$ mm²、$A_d=95$ mm² は流量係数を含む面積。`fromSuction[i]` と `toCenter[i]` は次式です。
+
+$$
+s_i=\begin{cases}o A_sG(p_s,p_i,\rho_s)&j_i=1\\0&j_i\ne1,\end{cases}
+\qquad
+d_i=\begin{cases}o A_dG^\pm(i,c)&j_i=4\\0&j_i\ne4.\end{cases}
+$$
+
+### 各室と三つの有効な漏れ経路
+
+$n(i)$ は次の室番号 $(2,3,4,1)$、$b(i)$ は前の室番号 $(4,1,2,3)$ です。`seal[i]` は $i\to n(i)$ を正とし、$j_i<4$ のときだけ有効です。各公転で4個の `seal` のうち3個が開通します。歯先・側面の両経路を通る流量の和を $l_i$ とし、上流比エンタルピーを使って流れに伴うエネルギーを計算します。[各通路の実装](Components/Scroll/ClearancePath.mo)
+
+$$
+\begin{aligned}
+L_i &= l_i\begin{cases}h_i&l_i\ge0\\h_{n(i)}&l_i<0,\end{cases}
+& D_i &= d_i\begin{cases}h_i&d_i\ge0\\h_c&d_i<0.\end{cases}\\
+\dot M_i &=s_i-d_i+l_{b(i)}-l_i,\\
+\dot U_i &=s_i h_s-D_i+L_{b(i)}-L_i-p_i\dot V_i .
+\end{aligned}
+$$
+
+$L_i,D_i$ は [W]。例えば中央室圧が高く $d_i<0$ になると、$-D_i$ は正で、中央室の $h_c$ の冷媒が吐出段階の室へ流入します。`tipLeakRate` と `flankLeakRate` は各経路の瞬時流量の絶対値をそれぞれ合計した値です。性能表ではこの値を1公転で時間平均します。
+
+### 中央室と下流のリード弁
+
+中央は固定容積 $V_c=10$ cm³、$\dot V_c=0$ の独立した冷媒室です。$j_o$ を `pockets.outlet.m_flow`（中央室へ入る向きが正）とすると、次の2式で $p_c,h_c$ が決まります。[中央室](Components/Scroll/PocketSet.mo) ／ [リード弁の運動・有効開口面積](PhysicalEquations.md#吐出リード弁のリフトと流量)
+
+$$
+\dot M_c=\sum_i d_i+j_o,\qquad
+\dot U_c=\sum_i D_i+j_o h_c,\qquad M_c=\rho(p_c,h_c)V_c .
+$$
+
+リード弁入口は $p_c,h_c$、出口はマフラ圧です。開弁差圧は 4.5 kPa で、目標リフトを有限質量・ばね・減衰の二次系が追従します。弁を通る流量は $-j_o\ge0$。そのため `toCenter[i]` の負値と、リード弁の流れは両立します。中央室と四室を合計すると、全ての $l_i,L_i,d_i,D_i$ が消え、外部流と図示動力だけが残ります。
+
+## 旋回駆動と圧縮機全体の保存則
+
+`OrbitDrive` の両フランジの角度は等しく、$v_x=-y\omega,\ v_y=x\omega$ です。フランジに入るトルクを正とすると、公転質量 $m_o$ の等価慣性と直交キーの摩擦を軸に換算する式は次のようになります。[旋回駆動部](Components/Scroll/OrbitDrive.mo) ／ [軸と容積機構の接続](Components/Scroll/ScrollCompressor.mo)
+
+$$
+\begin{aligned}
+\tau_{\rm drive}+\tau_{\rm driven}
+ &= m_o e_o^2\dot\omega-y F_x+x F_y,\\
+(\tau_{\rm drive}+\tau_{\rm driven})\omega
+ &= \frac{d}{dt}\left(\tfrac12 m_oe_o^2\omega^2\right)+P_{\rm Oldham},\\
+\tau_{\rm wraps} &=-\sum_i p_i\,\frac{\Delta K_{j_i}f'(u)}{2\pi},
+& P_i&=\tau_{\rm wraps}\omega .
+\end{aligned}
+$$
+
+既定値は $m_o=0.42$ kg。`bearingLoss` は軸受摩擦トルクと角速度の積、`oldhamLoss` は直交キーの摩擦動力、`motorLoss` は電気入力と電磁動力との差です。スクロールの軸は `useOilFilm=false` に固定されています。`useDetailedLosses` を切り替えると、モーターの銅損・鉄損方式と効率方式が切り替わります。[軸受](Components/Rotary/BaseClasses/ShaftMechanics.mo) ／ [モーターの両方式](Components/Rotary/BaseClasses/PartialMotor.mo)
+
+冷媒容積の集合 $\mathcal V$ はアキュームレータ1、室対4、中央室1、吐出マフラ1、高圧プレナム1の計8個です。回転子の慣性を $J_m$、外部の吸入量と吐出量を $s,d\ge0$ とすると、組立の `charge`、`E`、`driveLoss` は以下の収支を満たします。
+
+$$
+\begin{aligned}
+M&=\sum_{\mathcal V} M_k, &
+E&=\sum_{\mathcal V}U_k+\tfrac12 J_m\omega^2+\tfrac12 m_o e_o^2\omega^2,\\
+P_{\rm loss}&=P_{\rm motor\,loss}+P_{\rm bearing}+P_{\rm Oldham},\\
+\dot M&=s-d, &
+\dot E&=s h_{\rm in}-d h_{\rm out}+P_{\rm el}-P_{\rm loss}.
+\end{aligned}
+$$
+
+積算吐出質量 $D(t)=\int d\,dt$、積算電力量 $W(t)=\int P_{\rm el}\,dt$ を保持し、公転番号が増えた時刻 $t_k$ だけで `meanDelivery` $=(D_k-D_{k-1})/(t_k-t_{k-1})$、`meanPower` $=(W_k-W_{k-1})/(t_k-t_{k-1})$ を更新します。最初の公転完了まで両者は初期値ゼロです。
+
+## 単体例の初期化と再膨張
+
+単体例の境界圧力を $p_s,p_d$、吸入過熱度を $\Delta T$ とし、$h_L=h(p_s,T_{\rm sat}(p_s)+\Delta T)$、$h_H=h_L+[h_{is}(p_d,s_L)-h_L]/0.72$ とします。$s_L$ は吸入状態の比エントロピー。`ScrollStandalone` から各部品に渡す初期圧力は $p_L=0.989p_s,\ p_H=1.012p_d$ です。次の値を $p,h$ の初期条件として固定します。[境界条件](Examples/BaseClasses/PartialCompressorBench.mo) ／ [単体例](Examples/CompressorTests/ScrollStandalone.mo) ／ [室対と中央室の初期値](Components/Scroll/PocketSet.mo)
+
+| 軸角ゼロでの容積 | $p(0)$ | $h(0)$ |
+|---|---:|---:|
+| 室対1・段階1の開始（残留ガス） | $p_H$ | $h_H$ |
+| 室対2・段階2の開始（吸入閉鎖） | $p_L$ | $h_L$ |
+| 室対3・段階3の開始（圧縮途中） | $\sqrt{p_Lp_H}$ | $(h_L+h_H)/2$ |
+| 室対4・段階4の開始、中央室、マフラ、高圧プレナム | $p_H$ | $h_H$ |
+| 吸入アキュームレータ | $p_L$ | $h_L$ |
+
+室対1は高圧の残留ガスを死容積に持って始まります。膨張で室圧が吸入口圧を下回ると、`fromSuction[1]` が正になります。軸角ゼロでモーターの初速は指令値、積分トルクは 2.3 N·m、リード弁のリフト・速度はゼロです。`ScrollCooling` では冷房回路に直結し、圧縮機の既定初期値（低圧・高圧 370.5・1,175 kPa、比エンタルピー 407.25・445 kJ/kg）を使います。[冷房回路の設定](Examples/CoolingCycles/ScrollCooling.mo)
+
+## 一つの室対を四公転追跡する
+
+![R134a 単体例の室対1と中央室の圧力、および第4公転の中央ポート流量](Resources/Reference/scroll_r134a_center.png)
+
+`ScrollStandalone` の R134a 計算から、同じ室対1の最初の4公転を抜き出しました。上図の 0～1 公転は吸入、1～3 は閉じ込み圧縮、3～4 は中央吐出です。中央ポートが閉じている間は、室対と中央室の圧力が異なっていても中央ポートの流量はゼロです。
+
+下図は上図の色付き区間を角度で拡大したものです。中央室の方が高圧の状態でポートが開くと、`compressor.pockets.toCenter[1]` は一時約 −94 g/s となり、その後、室対から中央へ向かう正の流れに移ります。これは室対1の瞬時値です。吐出管出口で測る1公転平均流量は `compressor.meanDelivery` に記録されます。[圧力・流量のモデル](Components/Scroll/PocketSet.mo) ／ [R134a 単体例](Examples/CompressorTests/ScrollStandalone.mo)
+
 ## 単体例と冷房サイクル例
 
 パッケージの `package.mo` を OMEdit で開き、**Examples → CompressorTests → ScrollStandalone** で吸入・吐出境界付き単体試験、**Examples → CoolingCycles → ScrollCooling** で圧縮機を接続した冷房サイクルを実行します。[単体例](Examples/CompressorTests/ScrollStandalone.mo)・[サイクル例](Examples/CoolingCycles/ScrollCooling.mo)

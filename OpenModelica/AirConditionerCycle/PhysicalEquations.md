@@ -10,6 +10,8 @@
 
 **部品を探す**
 
+- [詳細圧縮機の部品と方程式の対応](#詳細圧縮機の部品と方程式の対応) ／ [二回転の室圧と弁リフト](NobelCompressor.md#二回転の室圧と弁リフトを読む) ／ [四公転の室圧と中央ポート流量](ScrollCompressor.md#一つの室対を四公転追跡する)
+
 - [2気筒ロータリーの部品と接続](#ツインロータリーの構成と保存則) ／ [2気筒の単体例と冷凍回路](#ツインロータリーの実行例) ／ [シリンダすきまの比較試験](#シリンダすきまの比較試験)
 
 - [サイクルの機器](#サイクルの機器) ／ [圧縮機の選択と組立](#圧縮機の選択と組立)
@@ -270,6 +272,13 @@ OMEdit 上ではどちらの圧縮機でも `shell` や `motor` と表示され�
 
 `RatedCooling` は `room` と `outdoor` をともに `FixedTemperature` とし、熱ポート温度を 298.15 K と 308.15 K に保ちます。必要な熱流率は熱交換器と解いた結果です。`OutdoorTemperatureRamp` では室外側を `PrescribedTemperature` に替え、`Ramp airTemperature` の出力を温度入力 `outdoor.T` に結びます。例えば 180 s では `airTemperature.y` と `outdoor.port.T` がともに 310.65 K（37.5 °C）になります。温度指令と、同時刻に凝縮器が実際に捨てる熱量率 `cycle.Q_rejected` を区別して表示できます。[定格冷房の温度源](Examples/CoolingCycles/RatedCooling.mo)・[外気温ランプの配線](Examples/CoolingCycles/OutdoorTemperatureRamp.mo)
 
+湿り冷媒の供給境界と外気温ランプでは、固定量と時刻で変わる量を次式で指定します。$x_f=0.80$、$p_f=375$ kPa、時間 $t$ は秒、外気温は K です。$h_l,h_v$ は同じ供給圧力の飽和液・飽和蒸気比エンタルピーです。[湿り吸入](Examples/ComponentTests/AccumulatorWetInlet.mo) ／ [外気温ランプ](Examples/CoolingCycles/OutdoorTemperatureRamp.mo)
+
+$$
+h_f=(1-x_f)h_l(p_f)+x_f h_v(p_f),\qquad
+T_{out}(t)=308.15+5\operatorname{clip}((t-120)/120,0,1).
+$$
+
 ## 冷凍サイクルの例題
 
 OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditionerCycle/package.mo` を開きます。下記は `AirConditionerCycle.Examples` の CoolingCycles 内の実行クラスです。「シミュレーション」を実行し、結果ブラウザーで指定の変数を選びます。圧力は Pa → MPa、冷房能力は W → kW に表示単位を切り替えると、以下の数値と照合できます。
@@ -358,7 +367,7 @@ OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditio
 
 **単位と添字**　圧力 $p$ は絶対圧 [Pa]、温度 $T$ は [K]、比エンタルピー $h$ は [J/kg]、密度 $\rho$ は [kg/m³]、容積 $V$ は [m³]、エネルギーは [J]、熱流率・動力は [W] です。上付きの点は時間微分、$l,v$ は飽和液・飽和蒸気を表します。$\operatorname{clip}(z,a,b)=\min(b,\max(a,z))$ とします。$T$ の差は K と °C で同じ値です。
 
-**モデルと資料の対応**　章末に実装ファイルを挙げています。パッケージ内の編集用 Markdown では、そのリンクから各クラスを開けます。例題名の先頭には `AirConditionerCycle.Examples.` が付きます。圧縮機の内部部品は `Components/Rotary/`、内部の共通式は `Components/Rotary/BaseClasses/` にあります。
+**モデルと資料の対応**　章末に実装ファイルを挙げています。パッケージ内の編集用 Markdown では、そのリンクから各クラスを開けます。例題名の先頭には `AirConditionerCycle.Examples.` が付きます。ロータリーの機構・共通式は `Components/Rotary/`、一体ブレードとブッシュは `Components/Rotary/Nobel/`、スクロールの作動室と駆動部は `Components/Scroll/` にあります。
 
 計算環境は OpenModelica 1.27.2、Modelica Standard Library 4.1.0、ExternalMedia 4.1.1（CoolProp 7.2.0）です。掲載した性能は代表寸法と設定値によるシミュレーション結果です。
 
@@ -858,7 +867,7 @@ $$
 
 吐出側リザーバの設定エンタルピーはリザーバから出る流体に用いる値です。順方向に運転するときの $T_{\rm out}$ は `dischargeTemperature`、$\dot m_{\rm out}$ は `dischargeFlow` で確認できます。吸入・吐出流量は各瞬間で異なり、その差が圧縮機内の冷媒質量を変えます。
 
-この例ではアキュームレータ入口の逆止弁を有効にします。第5章の入口流量式に $\Delta p_+=\max(0,p_s-p_g)$ を用いると、$p_g\geq p_s$ で吸入は一時的に止まります。圧縮機部品の既定設定は `inletCheckValve=false` です。
+この例ではアキュームレータ入口の逆止弁を有効にします。第5章の入口流量式に $\Delta p_+=\max(0,p_s-p_g)$ を用いると、$p_g\geq p_s$ で吸入は一時的に止まります。単気筒ロータリーとノーベルの圧縮機本体では `inletCheckValve=false`、ツインとスクロールの組立では `true` を指定しています。
 
 $$
 j_i=A_i\sqrt{2\rho(p_s,h_s)}\,R(\Delta p_+,40\,{\rm Pa}),\quad
@@ -958,7 +967,7 @@ $$
 \eta_{\rm is,el}=\frac{\int\dot m_o\Delta h_s\,dt}{\int P_{\rm el}\,dt}.
 $$
 
-過渡運転では保有量と蓄熱の影響を含みます。効率と `meanPower` は最初の1回転完了後に更新されます。
+理論吸入質量の区間増分が正でないときは $\eta_v=0$、平均電気入力が正でないときは $\eta_{\rm is,el}=0$ を返します。過渡運転では保有量と蓄熱の影響を含みます。効率と `meanPower` は最初の1回転完了後に更新されます。
 
 **実装**　[LossReport.mo](Components/Rotary/LossReport.mo) ・ [RollingPistonCompressor.mo](Components/Rotary/RollingPistonCompressor.mo) ・ [pressureDropPower.mo](Components/Rotary/BaseClasses/pressureDropPower.mo)
 
@@ -1045,6 +1054,13 @@ $$
 ### 合流、図示動力と保存則
 
 各弁の吐出流量を正の $\dot m_u,\dot m_l$、比エンタルピーを $h_u,h_l$ とすると、マフラに入る質量は毎秒 $\dot m_u+\dot m_l$、運ばれるエネルギーは毎秒 $\dot m_u h_u+\dot m_l h_l$ です。合流点は `FluidPort` の流量保存と `stream` 混合で表現します。マフラとシェルに冷媒が蓄積されるため、各弁の流量和と共通吐出管の瞬時流量には差が出ます。
+
+両弁の合計流量が正のとき、マフラ入口の混合比エンタルピーと流量の差は次式で検算できます。$M_m,M_p$ はマフラと高圧プレナムの冷媒質量、$d$ は外部吐出管の流出量です。両弁が閉じれば、流入エンタルピー流率はゼロです。
+
+$$
+h_{mix}=\frac{\dot m_u h_u+\dot m_l h_l}{\dot m_u+\dot m_l},\qquad
+\frac{d(M_m+M_p)}{dt}=\dot m_u+\dot m_l-d .
+$$
 
 2気筒の図示動力は $P_{ind}=-\sum_{i=u,l}(p_{i,A}-p_{i,B})\dot V_{i,A}$ です。総質量 $M$ は固定容器3個と作動室4個の冷媒質量の和。総エネルギー $E$ はその冷媒内部エネルギーに両ベーンの運動・ばねエネルギーと回転子の運動エネルギーを加えたものです。正の外部吸入・吐出流量を使うと、断熱圧縮機全体の収支は次式になります。
 
@@ -1167,3 +1183,25 @@ OpenModelica 1.27.2 と ExternalMedia 4.1.1 で室圧に対する漏れの向き
 対称な二つの作動室を一組として四組を扱い、吸入から中央吐出室までの容積を公転角と行程容積・内蔵容積比から計算します。歯先と側面のすきまを通る流れは隣接する室の質量・エネルギー収支に入ります。[部品・コネクタ・方程式](ScrollCompressor.md) ／ [専用ガイド（PDF）](ScrollCompressor.pdf)
 
 単体例では `compressor.wraps.stage[1]` と `compressor.pockets.pocket[1].p` [Pa] を重ねると、室対1の行程と圧力上昇を追えます。同じ R134a 条件で6公転目の吐出は 22.30 g/s、電気入力は 725.2 W です。回路例の平均は `cycle.compressor.meanDelivery` と `cycle.compressor.meanPower` で読み取り、6公転目は 21.78 g/s、725.2 W です。[ScrollStandalone](Examples/CompressorTests/ScrollStandalone.mo) ／ [ScrollCooling](Examples/CoolingCycles/ScrollCooling.mo) ／ [試験結果と収支](Resources/Reference/scroll_compressor.csv)
+
+## 詳細圧縮機の部品と方程式の対応
+
+冷媒の計算は吸入側から、動力の計算はモーター側からたどれます。ノーベルの `roller` は一体ブレード、`vane` は揺動ブッシュです。スクロールでは `wraps` が容積を定め、`pockets` がその容積内の状態を解きます。
+
+- **アキュームレータと吸入管**　入口の絞り、気液平衡、上部蒸気の取り出し、吸入管の Darcy 圧損を経て吸入口圧力が決まります。入口逆止弁の設定は組立・試験台で指定します。[液保持と入口流量](#アキュームレータの液保持と上部蒸気取り出し) ／ [配管の式](#吸入管と吐出管の圧力損失)
+- **ノーベルの作動室**　一体ブレードの軸角から二室の容積微分とトルクを求め、ローラ外周・上下端面の3経路を室間収支へ渡します。ブッシュの揺動慣性にも軸動力が配分されます。[容積微分と仮想仕事](NobelCompressor.md#容積の微分から軸の負荷を求める) ／ [流路と保存則](NobelCompressor.md#二室の流路と漏れの収支) ／ [専用ガイド（PDF）](NobelCompressor.pdf)
+- **スクロールの作動室**　公転ごとの室番号、吸入・中央ポートの開口率、隣接室の漏れ、中央室の収支を使います。室と中央室との間では差圧に応じて上流状態が交代します。[室番号と開口率](ScrollCompressor.md#角度から室番号と開口面積を決める) ／ [各室・中央室の収支](ScrollCompressor.md#外周吸入口から中央吐出室までの収支) ／ [専用ガイド（PDF）](ScrollCompressor.pdf)
+- **冷媒物性・容積・吐出系**　全作動室の状態は `VolumeState` の $p,h$ 方程式から求めます。リード弁を通った冷媒はマフラ、断熱高圧プレナム、吐出管へ流れます。リード弁は両方式とも同じ部品です。[冷媒の状態方程式と蓄積](#固定容積と可動容積) ／ [リード弁](#吐出リード弁のリフトと流量) ／ [マフラ](#吐出マフラ) ／ [断熱プレナムの実装](Components/Rotary/Adiabatic/DischargePlenum.mo)
+- **モーター・軸・機構の動力**　モーター PI 制御、回転子慣性と軸受を共用します。ノーベルでは端面油膜とブッシュの摩擦、スクロールではオルダム継手の摩擦を集計します。[速度制御](#モーターの速度制御と慣性) ／ [電気損失](#電気入力から電磁動力へ) ／ [ノーベルの蓄積と散逸](NobelCompressor.md#初期条件と圧縮機全体の動力) ／ [スクロールの蓄積と散逸](ScrollCompressor.md#旋回駆動と圧縮機全体の保存則)
+
+### 閉回路で検算する
+
+蒸発器、凝縮器、圧縮機の蓄積質量を $M_e,M_d,M_c$、それぞれのエネルギーを $U_e,U_d,E_c$ とします。これら二つの断熱圧縮機を閉回路に搭載した例では、時刻 $t_0$ からの質量残差 $R_M$ とエネルギー残差 $R_E$ を次式で照合できます。$\Delta X=X(t)-X(t_0)$ です。
+
+$$
+R_M=\Delta(M_e+M_d+M_c),\qquad
+R_E=\Delta(U_e+U_d+E_c)
+ -\int_{t_0}^{t}(Q_{cool}-Q_{rej}+P_{el}-P_{loss})\,dt .
+$$
+
+両残差の理論値はゼロです。`Q_cooling` は室内から入る熱、`Q_rejected` は室外に出る熱、$P_{loss}$ は `cycle.compressor.driveLoss`。冷媒室間の漏れ流量と図示動力は組立内部の移送・仕事として相殺されます。[ノーベルの検算](Resources/Scripts/run_nobel_tests.py) ／ [スクロールの検算](Resources/Scripts/run_scroll_tests.py)

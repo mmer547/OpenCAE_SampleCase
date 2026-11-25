@@ -37,9 +37,9 @@ ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Exa
 | 旋回スクロールの各室圧・歯先漏れ・側面漏れ | 断熱スクロール／四つの対称室対 | `ScrollStandalone` | `ScrollCooling` |
 | 上記に加えて筐体の温度・放熱・冷媒への熱移動 | 熱連成ロータリー／従来の詳細モデル | `RotaryCompressorLossTest` | `RotaryCooling` |
 
-ノーベルコンプレッサーの機構図、容積式、ブッシュ摩擦と冷媒別の試験結果は専用資料にまとめています。[ノーベルコンプレッサーガイド](NobelCompressor.md) ／ [PDF](NobelCompressor.pdf)
+ノーベルコンプレッサーの機構図、容積式、ブッシュ摩擦と冷媒別の試験結果は専用資料にまとめています。[二室の流路と漏れ](NobelCompressor.md#二室の流路と漏れの収支) ／ [軸動力・初期条件](NobelCompressor.md#初期条件と圧縮機全体の動力) ／ [PDF](NobelCompressor.pdf)
 
-スクロール式は行程容積・内蔵容積比から作動室の容積曲線を指定します。[機構・物理方程式・試験結果](ScrollCompressor.md) ／ [PDF](ScrollCompressor.pdf)
+スクロール式は行程容積・内蔵容積比から作動室の容積曲線を指定します。[室番号と開口率](ScrollCompressor.md#角度から室番号と開口面積を決める) ／ [中央室と逆流](ScrollCompressor.md#外周吸入口から中央吐出室までの収支) ／ [旋回駆動の動力](ScrollCompressor.md#旋回駆動と圧縮機全体の保存則) ／ [PDF](ScrollCompressor.pdf)
 
 断熱版の単体例では `compressor.cylinder.pocketA.p` が作動室圧力、`compressor.reed.lift` が吐出弁リフト、`compressor.driveLoss` が電動機・軸・ベーンの散逸動力です。吐出冷媒温度 `dischargeTemperature` は圧縮仕事と冷媒物性から求めます。両ロータリーの単体例を同じ吸入条件・背圧・回転数で比較できます。[ロータリーの部品と設定](RotaryCompressor.md)
 
