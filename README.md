@@ -10,6 +10,8 @@ OpenModelica と OpenFOAM のサンプルケース集です。モデル、実行
 | [Compression_Chamber](OpenModelica/Compression_Chamber/Compression_Chamber.mo) | 冷媒圧縮機の簡易1室モデル。[OMEdit での実行手順](OpenModelica/README.md) |
 | [Oil_Circuit](OpenModelica/Oil_Circuit/OilCircuit.mo) | 油回路のモデル |
 
+`AirConditionerCycle` に含まれる[ノーベル圧縮機](OpenModelica/AirConditionerCycle/NobelCompressor.md)と[スクロール圧縮機](OpenModelica/AirConditionerCycle/ScrollCompressor.md)の解説では、各モデルの構造と計算結果を確認できます。
+
 ## OpenFOAM
 
 各ケースのディレクトリに計算条件と実行スクリプトを収録しています。
@@ -20,7 +22,3 @@ OpenModelica と OpenFOAM のサンプルケース集です。モデル、実行
 | [TwoMeshAMI](OpenFOAM/TwoMeshAMI/) | 2つのメッシュを AMI で接続するケース |
 | [cfMeshAndMRFWithTopoSet](OpenFOAM/cfMeshAndMRFWithTopoSet/) | cfMesh と topoSet を用いた MRF のケース |
 | [tetgen](OpenFOAM/tetgen/) | TetGen と autoPatch を用いたメッシュ作成のケース |
-
-## 移行元の開発ブランチ
-
-OpenModelica の旧 `main` に未統合だった[ノーベル圧縮機](https://github.com/mmer547/OpenCAE_SampleCase/blob/feature/nobel-compressor/OpenModelica/AirConditionerCycle/NobelCompressor.md)と[スクロール圧縮機](https://github.com/mmer547/OpenCAE_SampleCase/blob/feature/scroll-compressor/OpenModelica/AirConditionerCycle/ScrollCompressor.md)は、それぞれ `feature/nobel-compressor` と `feature/scroll-compressor` に収録しています。ツインロータリ圧縮機は `main` に含まれています。
