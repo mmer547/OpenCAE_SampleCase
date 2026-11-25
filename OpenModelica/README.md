@@ -4,8 +4,6 @@
 
 圧縮機、凝縮器、膨張弁、蒸発器を組み合わせた冷凍サイクルです。圧縮機を差し替えてサイクル全体を計算する例と、圧縮機単体の試験例を収録しています。[ライブラリの導入と OMEdit での実行方法](AirConditionerCycle/README.md)
 
-圧縮機の構造や計算結果は、[ロータリ・ツインロータリ圧縮機](AirConditionerCycle/RotaryCompressor.md)、[ノーベル圧縮機](AirConditionerCycle/NobelCompressor.md)、[スクロール圧縮機](AirConditionerCycle/ScrollCompressor.md)の解説を参照してください。
-
 ## Compression_Chamber — 冷媒圧縮機の圧縮室
 
 容積が周期的に変化する1室の質量・エネルギー収支を解き、吸入、漏れ、吐出弁を通る流れを計算します。[モデルファイル](Compression_Chamber/Compression_Chamber.mo)
