@@ -4,6 +4,8 @@
 
 R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮機と部品別ロータリー圧縮機で試験しました。冷媒物性は ExternalMedia 4.1.1 の CoolProp 7.2.0、実行環境は Linux x86-64、OpenModelica 1.27.2、Modelica 4.1.0 です。
 
+OMEdit の冷媒別フォルダには各冷媒8例、合計32例があります。ノーベルとスクロールの追加冷媒での単体試験は、各方式のスクリプトで冷媒を切り替えて実行します。[冷媒別の例題索引](Examples/README.md#冷媒を変えて比較する) ／ [ノーベルの試験条件](NobelCompressor.md) ／ [スクロールの試験条件](ScrollCompressor.md)
+
 ## 断熱ロータリーの例題
 
 | 冷媒 | 圧縮機単体（詳細損失あり） | 冷凍サイクル |
@@ -27,7 +29,7 @@ R134a 以外の例は `Examples.RefrigerantTests` にあります。単体例は
 | R410A | `R410AStandard` | `R410ARotary` |
 | CO₂、亜臨界 | `CO2SubcriticalStandard` | `CO2SubcriticalRotary` |
 
-詳細圧縮機単体を運転する例は同じパッケージの `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` です。R134a の単体例は`Examples.CompressorTests.RotaryCompressorStandalone` にあります。[単体試験の境界条件・実行方法](RotaryCompressor.md#単体試験の実行)
+詳細圧縮機単体を運転する例は同じパッケージの `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` です。R134a の単体例は `Examples.CompressorTests.RotaryCompressorStandalone` にあります。[単体試験の境界条件・実行方法](RotaryCompressor.md#単体試験の実行)
 
 モーター・機械・冷媒流路の損失を調べる場合は、同じパッケージの各 `LossTest` を実行します。[圧縮機損失の試験と結果](RotaryCompressor.md#損失評価)
 

@@ -24,6 +24,7 @@
 **実行する例題を探す**
 
 - [冷凍サイクルの例題](#冷凍サイクルの例題) ／ [圧縮機と部品の単体例題](#圧縮機と部品の単体例題) ／ [冷媒別の例題](#冷媒別の例題)
+- [全49例の索引と旧版からの移行手順](Examples/README.md) ／ [ノーベルとスクロールの単体試験と回路試験](#ノーベルとスクロールの単体試験と回路試験)
 - [物理方程式の索引](#物理方程式の索引) から、個別の導出、初期条件、損失の定義、保存則の検査結果を引けます。
 
 ## サイクルの機器
@@ -1150,3 +1151,19 @@ R134a、吸入 0.37463 MPa・吐出 1.15992 MPa（絶対圧）、吸入過熱度
 **結果の読み方。** 各シリンダの `radialLeakAB`、`topFaceLeakAB`、`bottomFaceLeakAB`、`vaneTipLeakAB` は A→B を正とした瞬時値 [kg/s]。`leakAB` は符号付きの和です。`compressor.losses.meanLeakRate` は軸1回転の絶対値平均で、ツインでは上下気筒の絶対値を加算します。[8条件の数値と保存則の残差](Resources/Reference/cylinder_clearances.csv)
 
 OpenModelica 1.27.2 と ExternalMedia 4.1.1 で室圧に対する漏れの向き、経路の和、質量・エネルギー収支を照合しました。追加で R290・R32・R410A・亜臨界 CO₂ の単気筒・ツイン、および R134a の上面のみ・下面のみを各 0.045 s 確認しました。R134a の熱連成単気筒と断熱ツインを冷凍回路に接続した場合も 0.045 s の収支を照合しました。[短時間試験の数値](Resources/Reference/cylinder_clearances_smoke.csv)・[再実行スクリプト](Resources/Scripts/run_clearance_tests.py)
+
+## ノーベルとスクロールの単体試験と回路試験
+
+どちらの方式も、単体例では試験台が吸入・吐出圧力を指定します。R134a の既定条件は蒸発 7 °C、凝縮 45 °C に相当する飽和圧力、吸入過熱度 5 K、回転数指令 3,000 rpm です。閉回路例では蒸発器・凝縮器が圧力を決めます。以下の流量と電力は最後に完了した1回転の平均で、圧縮機内部への冷媒の蓄積も含む短時間運転の参照値です。
+
+### ノーベルコンプレッサー
+
+ローラと一体のブレードがブッシュ内を摺動し、ブッシュは支点のまわりに揺動します。軸角から二室の容積を求め、室圧が軸に与えるトルクと、摺動・揺動それぞれの摩擦動力を計算します。二室間の漏れはローラ外周・上端面・下端面の3経路で計算します。一体ブレードの先端漏れはゼロです。背室圧力を介した経路は省略しています。[部品・コネクタ・方程式](NobelCompressor.md) ／ [専用ガイド（PDF）](NobelCompressor.pdf)
+
+単体例では `compressor.roller.beta` [rad] がブッシュの揺動角、`compressor.vane.slideLoss` と `compressor.vane.pivotLoss` [W] が各摩擦動力です。11回転目の吐出は 22.32 g/s、電気入力は 793.5 W です。回路例では `meanDelivery` [kg/s] と `meanPower` [W] を選びます。10回転目は 21.90 g/s、793.4 W です。[NobelStandalone](Examples/CompressorTests/NobelStandalone.mo) ／ [NobelCooling](Examples/CoolingCycles/NobelCooling.mo) ／ [単体試験の数値](Resources/Reference/nobel_standalone.csv)
+
+### スクロール圧縮機
+
+対称な二つの作動室を一組として四組を扱い、吸入から中央吐出室までの容積を公転角と行程容積・内蔵容積比から計算します。歯先と側面のすきまを通る流れは隣接する室の質量・エネルギー収支に入ります。[部品・コネクタ・方程式](ScrollCompressor.md) ／ [専用ガイド（PDF）](ScrollCompressor.pdf)
+
+単体例では `compressor.wraps.stage[1]` と `compressor.pockets.pocket[1].p` [Pa] を重ねると、室対1の行程と圧力上昇を追えます。同じ R134a 条件で6公転目の吐出は 22.30 g/s、電気入力は 725.2 W です。回路例の平均は `cycle.compressor.meanDelivery` と `cycle.compressor.meanPower` で読み取り、6公転目は 21.78 g/s、725.2 W です。[ScrollStandalone](Examples/CompressorTests/ScrollStandalone.mo) ／ [ScrollCooling](Examples/CoolingCycles/ScrollCooling.mo) ／ [試験結果と収支](Resources/Reference/scroll_compressor.csv)
