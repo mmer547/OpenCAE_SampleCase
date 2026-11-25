@@ -20,9 +20,12 @@ ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Exa
 | 作動室圧力・弁リフト・漏れ・電力損失 | 断熱ロータリー／軸角ごとに計算 | **`AdiabaticRotaryStandalone`** | `AdiabaticRotaryCooling` |
 | 2気筒の吐出タイミング・共通軸の動力・合流後の流量 | 断熱ツインロータリー／単段並列、位相差180° | **`TwinRotaryStandalone`** | `TwinRotaryCooling` |
 | 一体ブレードの揺動角・ブッシュ摩擦・室間漏れ | ノーベルコンプレッサー／単気筒・断熱 | `NobelStandalone` | `NobelCooling` |
+| 旋回スクロールの各室圧・歯先漏れ・側面漏れ | 断熱スクロール／四つの対称室対 | `ScrollStandalone` | `ScrollCooling` |
 | 上記に加えて筐体の温度・放熱・冷媒への熱移動 | 熱連成ロータリー／従来の詳細モデル | `RotaryCompressorLossTest` | `RotaryCooling` |
 
 ノーベルコンプレッサーの機構図、容積式、ブッシュ摩擦と冷媒別の試験結果は専用資料にまとめています。[ノーベルコンプレッサーガイド](NobelCompressor.md) ／ [PDF](NobelCompressor.pdf)
+
+スクロール式は行程容積・内蔵容積比から作動室の容積曲線を指定します。[機構・物理方程式・試験結果](ScrollCompressor.md) ／ [PDF](ScrollCompressor.pdf)
 
 断熱版の単体例では `compressor.cylinder.pocketA.p` が作動室圧力、`compressor.reed.lift` が吐出弁リフト、`compressor.driveLoss` が電動機・軸・ベーンの散逸動力です。吐出冷媒温度 `dischargeTemperature` は圧縮仕事と冷媒物性から求めます。両ロータリーの単体例を同じ吸入条件・背圧・回転数で比較できます。[ロータリーの部品と設定](RotaryCompressor.md)
 
