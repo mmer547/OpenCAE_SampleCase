@@ -14,5 +14,7 @@ CompressorReplacement
 FixedFlowCompressor
 AccumulatorWetInlet
 BaseClasses
+ScrollStandalone
+ScrollCooling
 NobelStandalone
 NobelCooling
