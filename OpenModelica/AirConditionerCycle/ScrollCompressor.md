@@ -59,7 +59,7 @@ $L_t$ は対称二室分の有効歯先長、$H$ はラップ高さ、$N_f$ は�
 
 ## 単体例と冷房サイクル例
 
-パッケージの `package.mo` を OMEdit で開き、**Examples → ScrollStandalone** で吸入・吐出境界付き単体試験、**Examples → ScrollCooling** で圧縮機を接続した冷房サイクルを実行します。[単体例](Examples/ScrollStandalone.mo)・[サイクル例](Examples/ScrollCooling.mo)
+パッケージの `package.mo` を OMEdit で開き、**Examples → CompressorTests → ScrollStandalone** で吸入・吐出境界付き単体試験、**Examples → CoolingCycles → ScrollCooling** で圧縮機を接続した冷房サイクルを実行します。[単体例](Examples/CompressorTests/ScrollStandalone.mo)・[サイクル例](Examples/CoolingCycles/ScrollCooling.mo)
 
 **ScrollCompressor** の冷媒回路はアキュームレータ → 吸入管 → 四組の作動室 → 中央室 → 吐出リード弁 → マフラ → 高圧プレナム → 吐出管です。モーター、軸受、旋回駆動部、容積機構を回転フランジで接続しています。電気入力・吐出流量の直前公転平均は `compressor.meanPower`、`compressor.meanDelivery` です。作動室1の圧力は `compressor.pockets.pocket[1].p`、段階番号は `compressor.wraps.stage[1]` です。[構成と接続図](Components/Scroll/ScrollCompressor.mo)
 

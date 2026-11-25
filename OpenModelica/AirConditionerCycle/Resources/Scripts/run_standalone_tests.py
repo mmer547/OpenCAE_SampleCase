@@ -11,11 +11,11 @@ from run_tests import run_omc
 from loss_checks import LOSS_FIELDS, check_losses
 
 EXAMPLES = {
-    "R134a": "RotaryCompressorStandalone",
-    "R290": "RefrigerantTests.R290Standalone",
-    "R32": "RefrigerantTests.R32Standalone",
-    "R410A": "RefrigerantTests.R410AStandalone",
-    "CO2": "RefrigerantTests.CO2SubcriticalStandalone",
+    "R134a": "CompressorTests.RotaryCompressorStandalone",
+    "R290": "RefrigerantTests.R290.R290Standalone",
+    "R32": "RefrigerantTests.R32.R32Standalone",
+    "R410A": "RefrigerantTests.R410A.R410AStandalone",
+    "CO2": "RefrigerantTests.CO2.CO2SubcriticalStandalone",
 }
 FIELDS = ("dischargeFlow|dischargeTemperature|compressor[.](P_el|m_flow|E|charge|outlet[.]h_outflow|"
           "shell[.]Q_ambient|reed[.](lift|m_flow)|roller[.]revolutions)")
@@ -116,10 +116,13 @@ def main():
             name = "AirConditionerCycle.Examples." + EXAMPLES[fluid]
             fields = FIELDS
             if args.losses:
-                name = name.removesuffix("Standalone") + "LossTest"
+                if fluid == "R134a":
+                    name = "AirConditionerCycle.Examples.LossStudies.RotaryCompressorLossTest"
+                else:
+                    name = name.removesuffix("Standalone") + "LossTest"
                 fields += "|" + LOSS_FIELDS
             if args.adiabatic:
-                example = ("AdiabaticRotaryStandalone" if fluid == "R134a" else
+                example = ("CompressorTests.AdiabaticRotaryStandalone" if fluid == "R134a" else
                            EXAMPLES[fluid].replace("Standalone", "AdiabaticStandalone"))
                 name = "AirConditionerCycle.Examples." + example
                 fields += "|" + LOSS_FIELDS + "|compressor[.](driveLoss|shaft[.]frictionTorque|vane[.](friction|v))"

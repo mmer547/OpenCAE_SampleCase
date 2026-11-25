@@ -60,7 +60,7 @@ $$
 
 ## 実行例と検証
 
-OMEdit で `AirConditionerCycle/package.mo` を開きます。**Examples → NobelStandalone** が圧縮機単体、**Examples → NobelCooling** が冷房サイクルです。単体例では `compressor.roller.beta` が揺動角 [rad]、`compressor.vane.slideLoss` と `pivotLoss` が各摩擦動力 [W]、`dischargeFlow` が吐出管出口の流量 [kg/s] です。サイクル例の `meanDelivery` と `meanPower` は完了した直前1回転の平均です。[単体例](Examples/NobelStandalone.mo)・[サイクル例](Examples/NobelCooling.mo)
+OMEdit で `AirConditionerCycle/package.mo` を開きます。**Examples → CompressorTests → NobelStandalone** が圧縮機単体、**Examples → CoolingCycles → NobelCooling** が冷房サイクルです。単体例では `compressor.roller.beta` が揺動角 [rad]、`compressor.vane.slideLoss` と `pivotLoss` が各摩擦動力 [W]、`dischargeFlow` が吐出管出口の流量 [kg/s] です。サイクル例の `meanDelivery` と `meanPower` は完了した直前1回転の平均です。[単体例](Examples/CompressorTests/NobelStandalone.mo)・[サイクル例](Examples/CoolingCycles/NobelCooling.mo)
 
 既定は R134a、回転数指令 3,000 rpm。単体例の吸入・吐出の飽和温度は 7 °C、45 °C、吸入過熱度は 5 K です。CO₂ は亜臨界の −10 °C、8 °C を使用します。例題の仮定寸法は $R=24$ mm、$e=4.5$ mm、$H=45.5$ mm、$B=27$ mm です。行程容積は 27.98 cm³/rev、摺動ストロークは 9.0 mm、最大揺動角は 9.59° です。外周・上下の有効気体すきまは 5・8・8 µm です。
 

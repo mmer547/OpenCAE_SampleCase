@@ -114,7 +114,7 @@ def verify(path, log, name, stop):
 
 def simulate(omc, work, name):
     cycle=name=="ScrollCooling"
-    namespace="AirConditionerCycle.Examples"
+    namespace="AirConditionerCycle.Examples.CoolingCycles" if cycle else "AirConditionerCycle.Examples.CompressorTests"
     stop=.12 if name in ("ScrollStandalone","ScrollCooling") else .105
     source=None
     if name not in ("ScrollStandalone","ScrollCooling"):
@@ -127,7 +127,7 @@ def simulate(omc, work, name):
         source.write_text(f"""within ;
 package Study
   model {name}
-    extends AirConditionerCycle.Examples.ScrollStandalone(
+    extends AirConditionerCycle.Examples.CompressorTests.ScrollStandalone(
       redeclare package Medium=AirConditionerCycle.Media.{fluid}{changes});
   end {name};
 end Study;

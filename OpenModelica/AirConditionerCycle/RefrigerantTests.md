@@ -1,6 +1,6 @@
 # 追加冷媒の実行試験
 
-ツインロータリーでは、例えば R32 の単体試験に `Examples.RefrigerantTests.R32TwinStandalone`、冷房回路に `R32TwinCooling` を使います。CO₂ のクラス名は `CO2SubcriticalTwinStandalone` と `CO2SubcriticalTwinCooling` です。[2気筒の例題と運転条件](PhysicalEquations.md#ツインロータリーの実行例)
+ツインロータリーでは、例えば R32 の単体試験に `Examples.RefrigerantTests.R32.R32TwinStandalone`、冷房回路に `R32TwinCooling` を使います。CO₂ のクラス名は `CO2SubcriticalTwinStandalone` と `CO2SubcriticalTwinCooling` です。[2気筒の例題と運転条件](PhysicalEquations.md#ツインロータリーの実行例)
 
 R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮機と部品別ロータリー圧縮機で試験しました。冷媒物性は ExternalMedia 4.1.1 の CoolProp 7.2.0、実行環境は Linux x86-64、OpenModelica 1.27.2、Modelica 4.1.0 です。
 
@@ -8,7 +8,7 @@ R290、R32、R410A、CO₂（R744）を、標準の押しのけ容積型圧縮�
 
 | 冷媒 | 圧縮機単体（詳細損失あり） | 冷凍サイクル |
 |---|---|---|
-| R134a（`Examples` 直下） | `AdiabaticRotaryStandalone` | `AdiabaticRotaryCooling` |
+| R134a（CompressorTests／CoolingCycles） | `AdiabaticRotaryStandalone` | `AdiabaticRotaryCooling` |
 | R290 | `R290AdiabaticStandalone` | `R290AdiabaticCooling` |
 | R32 | `R32AdiabaticStandalone` | `R32AdiabaticCooling` |
 | R410A | `R410AAdiabaticStandalone` | `R410AAdiabaticCooling` |
@@ -18,7 +18,7 @@ R134a 以外の例は `Examples.RefrigerantTests` にあります。単体例は
 
 ## 標準圧縮機と熱連成ロータリーを OMEdit で実行する
 
-`package.mo` を開き、`AirConditionerCycle.Examples.RefrigerantTests` から実行例を選びます。各行の二つのモデルは同じ空気境界条件を使います。
+`package.mo` を開き、`AirConditionerCycle.Examples.RefrigerantTests` で冷媒フォルダを開き、実行例を選びます。各行の二つのモデルは同じ空気境界条件を使います。
 
 | 冷媒 | 標準モデル | ロータリー型 |
 |---|---|---|
@@ -27,7 +27,7 @@ R134a 以外の例は `Examples.RefrigerantTests` にあります。単体例は
 | R410A | `R410AStandard` | `R410ARotary` |
 | CO₂、亜臨界 | `CO2SubcriticalStandard` | `CO2SubcriticalRotary` |
 
-詳細圧縮機単体を運転する例は同じパッケージの `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` です。R134a の単体例はひとつ上の `Examples.RotaryCompressorStandalone` にあります。[単体試験の境界条件・実行方法](RotaryCompressor.md#単体試験の実行)
+詳細圧縮機単体を運転する例は同じパッケージの `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` です。R134a の単体例は`Examples.CompressorTests.RotaryCompressorStandalone` にあります。[単体試験の境界条件・実行方法](RotaryCompressor.md#単体試験の実行)
 
 モーター・機械・冷媒流路の損失を調べる場合は、同じパッケージの各 `LossTest` を実行します。[圧縮機損失の試験と結果](RotaryCompressor.md#損失評価)
 

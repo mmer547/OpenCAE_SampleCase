@@ -82,7 +82,7 @@ def run_standalone(compiler, work, fluid):
     source.write_text(f"""within ;
 package NobelBench
   model {name}
-    extends AirConditionerCycle.Examples.NobelStandalone(
+    extends AirConditionerCycle.Examples.CompressorTests.NobelStandalone(
       redeclare package Medium=AirConditionerCycle.Media.{fluid}{conditions});
   end {name};
 end NobelBench;
@@ -109,7 +109,8 @@ def main():
                   f"{result['last_turn_discharge_kg_s']*1000:.3f} g/s")
             results.append(result)
         name = "NobelCooling"
-        run_omc(args.omc, work, [(name, 0.21, 8400, ROTARY_FILTER + "|cycle[.]compressor[.]driveLoss")])
+        run_omc(args.omc, work, [(name, 0.21, 8400, ROTARY_FILTER + "|cycle[.]compressor[.]driveLoss")],
+                "AirConditionerCycle.Examples.CoolingCycles")
         check_rotary(work / f"{name}_res.csv", None, boundary_loss="driveLoss")
     if args.csv:
         with args.csv.open("w", encoding="utf-8", newline="") as stream:

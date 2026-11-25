@@ -83,7 +83,7 @@ def simulate(omc, work, model, case, medium, stop):
     source.write_text(f"""within ;
 package Study
   model {name}
-    extends AirConditionerCycle.Examples.{base}(
+    extends AirConditionerCycle.Examples.LossStudies.{base}(
       redeclare package Medium=AirConditionerCycle.Media.{medium}{cold},
       gaps(radialGap={radial}e-6,topGap={top}e-6,bottomGap={bottom}e-6));
   end {name};

@@ -91,12 +91,13 @@ def main():
     cases = []
     for fluid in FLUIDS:
         stop = ROTARY_STOP[fluid]
-        cases.extend([(case_name(fluid, "Standard"), 600, 1200, STANDARD_FILTER),
-                      (case_name(fluid, "Rotary"), stop, round(stop/0.000025), ROTARY_FILTER)])
+        cases.extend([(fluid + "." + case_name(fluid, "Standard"), 600, 1200, STANDARD_FILTER),
+                      (fluid + "." + case_name(fluid, "Rotary"), stop, round(stop/0.000025), ROTARY_FILTER)])
     with tempfile.TemporaryDirectory() as tmp:
         work = Path(tmp)
         run_omc(args.omc, work, cases, "AirConditionerCycle.Examples.RefrigerantTests")
-        verify({name: work/f"{name}_res.csv" for name, *_ in cases}, args.csv)
+        names = [path.rsplit(".", 1)[-1] for path, *_ in cases]
+        verify({name: work/f"{name}_res.csv" for name in names}, args.csv)
     print("All eight refrigerant cases passed.")
 
 

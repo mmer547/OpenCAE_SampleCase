@@ -104,14 +104,16 @@ def main():
     with tempfile.TemporaryDirectory() as temp:
         work = Path(temp)
         for fluid in (FLUIDS if args.fluid == "all" else (args.fluid,)):
-            namespace = "AirConditionerCycle.Examples"
             prefix = "TwinRotary"
             if fluid != "R134a":
-                namespace += ".RefrigerantTests"
                 prefix = ("CO2Subcritical" if fluid == "CO2" else fluid) + "Twin"
             for mode, stop in (("Standalone", 0.23), ("Cooling", 0.21)):
                 name = prefix + mode
                 cycle = mode == "Cooling"
+                group = "CoolingCycles" if cycle else "CompressorTests"
+                if fluid != "R134a":
+                    group = f"RefrigerantTests.{fluid}"
+                namespace = f"AirConditionerCycle.Examples.{group}"
                 log = run_omc(args.omc, work, [(name, stop, round(stop/0.000025), FIELDS)],
                               namespace, () if cycle else ("hSuction",))
                 h_suction = None

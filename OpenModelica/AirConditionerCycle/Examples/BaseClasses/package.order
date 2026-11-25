@@ -1,2 +1,7 @@
 PartialCompressorBench
 PartialRotaryBench
+FixedFlowCompressor
+StandardCase
+PartialRotaryCase
+RotaryCase
+AdiabaticRotaryCase

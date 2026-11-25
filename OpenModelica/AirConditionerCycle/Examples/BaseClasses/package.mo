@@ -1,4 +1,4 @@
 within AirConditionerCycle.Examples;
-package BaseClasses "圧縮機単体試験の共通境界条件"
+package BaseClasses "試験台・冷媒条件・差し替え用部品"
   extends Modelica.Icons.BasesPackage;
 end BaseClasses;

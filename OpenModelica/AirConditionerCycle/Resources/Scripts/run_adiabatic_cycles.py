@@ -12,8 +12,8 @@ from run_tests import run_omc
 
 def example(fluid):
     if fluid == "R134a":
-        return "AirConditionerCycle.Examples", "AdiabaticRotaryCooling", 0.21
-    return ("AirConditionerCycle.Examples.RefrigerantTests",
+        return "AirConditionerCycle.Examples.CoolingCycles", "AdiabaticRotaryCooling", 0.21
+    return (f"AirConditionerCycle.Examples.RefrigerantTests.{fluid}",
             case_name(fluid, "AdiabaticCooling"), ROTARY_STOP[fluid])
 
 

@@ -26,15 +26,16 @@ def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"
         path = model_file.resolve().as_posix().replace('"', '\\"')
         commands.append(f'if not loadFile("{path}") then print(getErrorString()); exit(1); end if;')
     if cases is None:
-        cases = [(name, 600, 300, ".*") for name in EXAMPLES] + [
-            ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),
-            ("AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
+        cases = [(f"CoolingCycles.{name}", 600, 300, ".*") for name in EXAMPLES] + [
+            ("CoolingCycles.RotaryCooling", 0.21, 8400, ROTARY_FILTER),
+            ("ComponentTests.AccumulatorWetInlet", 0.5, 500, "hDew|accumulator[.](quality|outlet[.]h_outflow|liquidMass)"),
         ]
     report_flag = f', simflags="-output={",".join(end_values)}"' if end_values else ""
     for name, stop, intervals, fields in cases:
+        short = name.rsplit(".", 1)[-1]
         commands.append(f'simulate({namespace}.{name}, stopTime={stop}, '
                         f'numberOfIntervals={intervals}, tolerance={tolerance:g}, method="dassl", '
-                        f'outputFormat="csv", fileNamePrefix="{name}", variableFilter="{fields}"{report_flag});')
+                        f'outputFormat="csv", fileNamePrefix="{short}", variableFilter="{fields}"{report_flag});')
         commands.append('getErrorString();')
     (work / "tests.mos").write_text("\n".join(commands) + "\n", encoding="utf-8")
     job = subprocess.run([compiler, "tests.mos"], cwd=work, stdout=subprocess.PIPE,

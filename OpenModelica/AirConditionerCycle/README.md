@@ -2,19 +2,33 @@
 
 R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器 → 膨張弁 → 蒸発器 → 圧縮機の順に標準の冷媒ポートで接続しています。室内 25 °C、室外 35 °C の設定では、600 秒時点の冷房能力は 2.996 kW、圧縮機消費電力は 0.745 kW、冷房 COP は 4.023 です。
 
+## OMEdit で例題を選ぶ
+
+`Examples` には次の5つの実行用フォルダがあります。初めて使う場合は **CoolingCycles → RatedCooling** を開きます。
+
+| フォルダ | 調べたいこと |
+|---|---|
+| [CoolingCycles](Examples/CoolingCycles) | 定格冷房、外気温の変化、圧縮機を交換した冷凍回路 |
+| [CompressorTests](Examples/CompressorTests) | 吸入圧力・吐出圧力を指定した各圧縮機の単体運転 |
+| [LossStudies](Examples/LossStudies) | ロータリーの電気・機械損失、単気筒・2気筒のすきま漏れ |
+| [ComponentTests](Examples/ComponentTests) | 湿り冷媒を吸入するアキュームレータの単体試験 |
+| [RefrigerantTests](Examples/RefrigerantTests) | R290、R32、R410A、亜臨界 CO₂。各冷媒に冷房・単体・損失の8例 |
+
+`BaseClasses` は共通試験台と試験用部品です。1.7.0 の例題を継承した自作モデルには、OpenModelica のライブラリ変換を利用できます。OMShell で自作パッケージと本版を読み込んで `convertPackageToLibrary(MyPackage, AirConditionerCycle, "1.8.0")` を実行すると、`uses` に 1.7.0 を指定した参照を更新できます。[旧クラス名と移動先の対応](Resources/Scripts/Conversion/ConvertExamplesFrom_1_7.mos)
+
 ## 部品と例題を調べる
 
 部品名から、接続先・方程式・設定値・OMEdit で表示する変数を引けます。例題には運転条件と参照結果を併記しています。[コンポーネント別ガイド](PhysicalEquations.md#サイクルの機器) ／ [冷凍サイクルの例題](PhysicalEquations.md#冷凍サイクルの例題) ／ [単体例題](PhysicalEquations.md#圧縮機と部品の単体例題) ／ [冷媒別の例題](PhysicalEquations.md#冷媒別の例題) ／ [PDF 版](PhysicalEquations.pdf)
 
 接続図のポート名から、受け渡す量・単位・正方向と接続先を確認できます。[コネクタの読み方](PhysicalEquations.md#冷媒と熱のコネクタ) ／ [機械・容積ポート](PhysicalEquations.md#機械フランジと作動室の容積ポート) ／ [信号](PhysicalEquations.md#制御信号と計測入力) ／ [内部サブコンポーネント](PhysicalEquations.md#圧縮機の内部サブコンポーネント) ／ [例題の境界部品](PhysicalEquations.md#例題の境界サブコンポーネント)
 
-シリンダ内の漏れは、単気筒の `Examples.RotaryClearanceStudy` と2気筒の `Examples.TwinRotaryClearanceStudy` で比較できます。半径すきま・上端面・下端面を個別に設定します。[流路と方程式](PhysicalEquations.md#シリンダの半径すきまと端面すきま) ／ [例題と比較結果](PhysicalEquations.md#シリンダすきまの比較試験)
+シリンダ内の漏れは、単気筒の `Examples.LossStudies.RotaryClearanceStudy` と2気筒の `Examples.LossStudies.TwinRotaryClearanceStudy` で比較できます。半径すきま・上端面・下端面を個別に設定します。[流路と方程式](PhysicalEquations.md#シリンダの半径すきまと端面すきま) ／ [例題と比較結果](PhysicalEquations.md#シリンダすきまの比較試験)
 
 ## 圧縮機を選ぶ
 
-ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **AdiabaticRotaryStandalone** から始めてください。
+ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **CompressorTests → AdiabaticRotaryStandalone** から始めてください。
 
-| 調べたいこと | 圧縮機 | 単体試験 | 冷凍サイクル |
+| 調べたいこと | 圧縮機 | 単体試験（CompressorTests／LossStudies） | 冷凍サイクル（CoolingCycles） |
 |---|---|---|---|
 | 冷房能力・COP・外気温の影響 | 標準／押しのけ容積と効率で計算 | — | `RatedCooling` |
 | 作動室圧力・弁リフト・漏れ・電力損失 | 断熱ロータリー／軸角ごとに計算 | **`AdiabaticRotaryStandalone`** | `AdiabaticRotaryCooling` |
@@ -37,19 +51,19 @@ ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Exa
 
 ## 詳細圧縮機だけを実行する
 
-OMEdit で `AirConditionerCycle/package.mo` を開き、**Examples → RotaryCompressorStandalone** を選んでシミュレーションを実行します。ダイアグラムは吸入リザーバ、11部品のロータリー圧縮機、吐出リザーバで構成されます。吸入圧力・過熱度・吐出背圧と回転数指令を変更すると、流量と消費電力の応答を調べられます。
+OMEdit で `AirConditionerCycle/package.mo` を開き、**Examples → CompressorTests → RotaryCompressorStandalone** を選んでシミュレーションを実行します。ダイアグラムは吸入リザーバ、11部品のロータリー圧縮機、吐出リザーバで構成されます。吸入圧力・過熱度・吐出背圧と回転数指令を変更すると、流量と消費電力の応答を調べられます。
 
-既定は R134a です。他の冷媒は `Examples.RefrigerantTests` の `R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` から選べます。試験時間は 0.23 s。プロットには `dischargeFlow`（kg/s）、`dischargeTemperature`（K）、`compressor.P_el`（W）、`compressor.reed.lift`（m）が使えます。[境界条件とコマンドラインでの再実行](RotaryCompressor.md#単体試験の実行)
+既定は R134a です。他の冷媒は `Examples.RefrigerantTests` で冷媒フォルダを開き、`R290Standalone`、`R32Standalone`、`R410AStandalone`、`CO2SubcriticalStandalone` から選べます。試験時間は 0.23 s。プロットには `dischargeFlow`（kg/s）、`dischargeTemperature`（K）、`compressor.P_el`（W）、`compressor.reed.lift`（m）が使えます。[境界条件とコマンドラインでの再実行](RotaryCompressor.md#単体試験の実行)
 
 ## 詳細圧縮機の損失を評価する
 
-OMEdit で `Examples.RotaryCompressorLossTest` を実行すると、瞬時値 `compressor.losses.power` と完了した直前1回転の平均 `compressor.losses.meanPower` をチャネル別に表示できます。巻線銅損・鉄損・一定付帯損失と、軸受・ベーン・ローラ端面油膜の摩擦は、電気入力・機械仕事・シェル発熱の収支に含まれます。吸吐出と室間漏れの圧損仕事率は流路ごとの診断値です。R290、R32、R410A、CO₂ は `Examples.RefrigerantTests` にある各 `LossTest` で選択できます。[設定と結果の読み方](RotaryCompressor.md#損失評価) ・ [物理方程式・第14～16章](PhysicalEquations.pdf) ・ [5冷媒の内訳CSV](Resources/Reference/compressor_losses.csv)
+OMEdit で `Examples.LossStudies.RotaryCompressorLossTest` を実行すると、瞬時値 `compressor.losses.power` と完了した直前1回転の平均 `compressor.losses.meanPower` をチャネル別に表示できます。巻線銅損・鉄損・一定付帯損失と、軸受・ベーン・ローラ端面油膜の摩擦は、電気入力・機械仕事・シェル発熱の収支に含まれます。吸吐出と室間漏れの圧損仕事率は流路ごとの診断値です。R290、R32、R410A、CO₂ は `Examples.RefrigerantTests` の冷媒別フォルダにある各 `LossTest` で選択できます。[設定と結果の読み方](RotaryCompressor.md#損失評価) ・ [物理方程式・第14～16章](PhysicalEquations.pdf) ・ [5冷媒の内訳CSV](Resources/Reference/compressor_losses.csv)
 
 ## OMEdit で動かす
 
 1. OpenModelica のライブラリマネージャーで **Modelica 4.1.0** と **ExternalMedia 4.1.1** をインストールします。OMShell を使う場合は下記のコマンドでも導入できます。ExternalMedia の公式配布 ZIP には CoolProp バックエンドのネイティブライブラリが入っています。[ExternalMedia 4.1.1 公式リリース](https://github.com/modelica-3rdparty/ExternalMedia/releases/tag/v4.1.1)
 2. 本パッケージの ZIP を展開し、OMEdit の「モデル／ライブラリファイルを開く」で `AirConditionerCycle/package.mo` を開きます。
-3. ライブラリブラウザーで `AirConditionerCycle.Examples.RatedCooling` を選び、「シミュレーション」を実行します。`cycle.Q_cooling`（W）、`cycle.P_el`（W）、`cycle.COP` が主要な結果です。
+3. ライブラリブラウザーで `AirConditionerCycle.Examples.CoolingCycles.RatedCooling` を選び、「シミュレーション」を実行します。`cycle.Q_cooling`（W）、`cycle.P_el`（W）、`cycle.COP` が主要な結果です。
 4. 配管図と機器アイコンは `AirConditionerCycle.CoolingCycle` のダイアグラムで確認できます。赤系の配管が高圧側、青系が低圧側、破線が蒸発器から膨張弁への液位信号です。
 
 ```modelica
@@ -79,9 +93,9 @@ installPackage(ExternalMedia, "4.1.1", exactMatch=true);
 
 ```modelica
 model MyCoolingTest
-  extends AirConditionerCycle.Examples.RatedCooling(
+  extends AirConditionerCycle.Examples.CoolingCycles.RatedCooling(
     cycle(redeclare model Compressor =
-      AirConditionerCycle.Examples.FixedFlowCompressor));
+      AirConditionerCycle.Examples.BaseClasses.FixedFlowCompressor));
 end MyCoolingTest;
 ```
 

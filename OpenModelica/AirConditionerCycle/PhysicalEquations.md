@@ -1,8 +1,8 @@
 # 冷凍サイクルの部品・例題と物理方程式
 
-**AirConditionerCycle 1.7.0　コンポーネント・例題ガイド**
+**AirConditionerCycle 1.8.0　コンポーネント・例題ガイド**
 
-冷房能力を調べるときは `Examples.RatedCooling`、圧縮機の中で吸入・圧縮・吐出が起こる順序を調べるときは `Examples.AdiabaticRotaryStandalone` を開きます。前者では回路が吸入・吐出圧力を決め、後者では試験台で両圧力を指定します。
+冷房能力を調べるときは `Examples.CoolingCycles.RatedCooling`、圧縮機の中で吸入・圧縮・吐出が起こる順序を調べるときは `Examples.CompressorTests.AdiabaticRotaryStandalone` を開きます。前者では回路が吸入・吐出圧力を決め、後者では試験台で両圧力を指定します。
 
 ![冷凍サイクルの四つの機器と、ロータリー圧縮機内の冷媒流路・駆動部の接続](Resources/Reference/component_map.png)
 
@@ -68,7 +68,7 @@
 
 ### FixedFlowCompressor　交換確認用圧縮機
 
-`Examples` に置かれた試験用部品です。`PartialIsentropicCompressor` の吐出状態・電力計算を使い、流量式だけを $\dot m=\mathrm{m\_set}$ とします。既定は 0.016 kg/s。運転条件は `CompressorReplacement` が供給します。自作圧縮機を接続するときは、この例の `cycle(redeclare model Compressor = …)` が交換箇所です。[部品](Examples/FixedFlowCompressor.mo)・[接続例](Examples/CompressorReplacement.mo)
+`Examples.BaseClasses` に置かれた試験用部品です。`PartialIsentropicCompressor` の吐出状態・電力計算を使い、流量式だけを $\dot m=\mathrm{m\_set}$ とします。既定は 0.016 kg/s。運転条件は `CompressorReplacement` が供給します。自作圧縮機を接続するときは、この例の `cycle(redeclare model Compressor = …)` が交換箇所です。[部品](Examples/BaseClasses/FixedFlowCompressor.mo)・[接続例](Examples/CoolingCycles/CompressorReplacement.mo)
 
 ## 吸入から作動室まで
 
@@ -200,7 +200,7 @@ PI 速度制御器が指令 `speed` と実速度から電磁トルク `driveTorq
 
 表の `pocketA` と `pocketB` は `cylinder` の内側です。`cylinder.a` は組立側と内部の `pocketA.boundary` に同じ容積と圧力を伝える中継ポートです。[組立側の接続](Components/Rotary/BaseClasses/PartialRollingPiston.mo)・[シリンダ内の接続](Components/Rotary/BaseClasses/PartialCylinder.mo)
 
-**圧縮中の符号を実例で読む。** R134a の `Examples.RotaryCompressorLossTest` の既定条件で、0.030 s の室 A は `fillingA=false`。圧力は 0.7639 MPa、`roller.volumeRateA` は −0.002540 m³/s でした。ローラの `a.effort` は +0.7639 MPa、作動室の `boundary.effort` は −0.7639 MPa です。容積が減るため、室 A に入る圧縮仕事率は約 **+1.94 kW** になります。この値は一室の瞬時値で、モーターの一回転平均電力とは集計範囲が異なります。[確認用の例題](Examples/RotaryCompressorLossTest.mo)
+**圧縮中の符号を実例で読む。** R134a の `Examples.LossStudies.RotaryCompressorLossTest` の既定条件で、0.030 s の室 A は `fillingA=false`。圧力は 0.7639 MPa、`roller.volumeRateA` は −0.002540 m³/s でした。ローラの `a.effort` は +0.7639 MPa、作動室の `boundary.effort` は −0.7639 MPa です。容積が減るため、室 A に入る圧縮仕事率は約 **+1.94 kW** になります。この値は一室の瞬時値で、モーターの一回転平均電力とは集計範囲が異なります。[確認用の例題](Examples/LossStudies/RotaryCompressorLossTest.mo)
 
 ## 制御信号と計測入力
 
@@ -263,37 +263,39 @@ OMEdit 上ではどちらの圧縮機でも `shell` や `motor` と表示され�
 
 ### MassFlowSource_h　湿り吸入試験の抜き出し口
 
-`AccumulatorWetInlet` は `feed.ports[1] ↔ accumulator.inlet` に湿り冷媒を与える `Boundary_ph` を、`accumulator.outlet ↔ extraction.ports[1]` に `MassFlowSource_h` を置きます。`extraction.m_flow=-0.012` kg/s は流量源の設定値です。流量源の正方向は供給なので、この設定ではアキュームレータから毎秒 0.012 kg を抜きます。結果では `accumulator.outlet.m_flow` が負、流量源自身に入る `extraction.ports[1].m_flow` が正です。出口状態を決めるのはアキュームレータで、`accumulator.outlet.h_outflow` を飽和蒸気値 `hDew` と比較できます。[湿り吸入試験](Examples/AccumulatorWetInlet.mo)・[標準の境界モデル](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Fluid/Sources.mo)
+`AccumulatorWetInlet` は `feed.ports[1] ↔ accumulator.inlet` に湿り冷媒を与える `Boundary_ph` を、`accumulator.outlet ↔ extraction.ports[1]` に `MassFlowSource_h` を置きます。`extraction.m_flow=-0.012` kg/s は流量源の設定値です。流量源の正方向は供給なので、この設定ではアキュームレータから毎秒 0.012 kg を抜きます。結果では `accumulator.outlet.m_flow` が負、流量源自身に入る `extraction.ports[1].m_flow` が正です。出口状態を決めるのはアキュームレータで、`accumulator.outlet.h_outflow` を飽和蒸気値 `hDew` と比較できます。[湿り吸入試験](Examples/ComponentTests/AccumulatorWetInlet.mo)・[標準の境界モデル](https://github.com/modelica/ModelicaStandardLibrary/blob/v4.1.0/Modelica/Fluid/Sources.mo)
 
 ### FixedTemperature・PrescribedTemperature・Ramp　空気温度の境界
 
-`RatedCooling` は `room` と `outdoor` をともに `FixedTemperature` とし、熱ポート温度を 298.15 K と 308.15 K に保ちます。必要な熱流率は熱交換器と解いた結果です。`OutdoorTemperatureRamp` では室外側を `PrescribedTemperature` に替え、`Ramp airTemperature` の出力を温度入力 `outdoor.T` に結びます。例えば 180 s では `airTemperature.y` と `outdoor.port.T` がともに 310.65 K（37.5 °C）になります。温度指令と、同時刻に凝縮器が実際に捨てる熱量率 `cycle.Q_rejected` を区別して表示できます。[定格冷房の温度源](Examples/RatedCooling.mo)・[外気温ランプの配線](Examples/OutdoorTemperatureRamp.mo)
+`RatedCooling` は `room` と `outdoor` をともに `FixedTemperature` とし、熱ポート温度を 298.15 K と 308.15 K に保ちます。必要な熱流率は熱交換器と解いた結果です。`OutdoorTemperatureRamp` では室外側を `PrescribedTemperature` に替え、`Ramp airTemperature` の出力を温度入力 `outdoor.T` に結びます。例えば 180 s では `airTemperature.y` と `outdoor.port.T` がともに 310.65 K（37.5 °C）になります。温度指令と、同時刻に凝縮器が実際に捨てる熱量率 `cycle.Q_rejected` を区別して表示できます。[定格冷房の温度源](Examples/CoolingCycles/RatedCooling.mo)・[外気温ランプの配線](Examples/CoolingCycles/OutdoorTemperatureRamp.mo)
 
 ## 冷凍サイクルの例題
 
-OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditionerCycle/package.mo` を開きます。下記は `AirConditionerCycle.Examples` 内の実行クラスです。「シミュレーション」を実行し、結果ブラウザーで指定の変数を選びます。圧力は Pa → MPa、冷房能力は W → kW に表示単位を切り替えると、以下の数値と照合できます。
+OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditionerCycle/package.mo` を開きます。下記は `AirConditionerCycle.Examples` の CoolingCycles 内の実行クラスです。「シミュレーション」を実行し、結果ブラウザーで指定の変数を選びます。圧力は Pa → MPa、冷房能力は W → kW に表示単位を切り替えると、以下の数値と照合できます。
 
 ### RatedCooling　標準圧縮機の定格冷房
 
-室内 25 °C、室外 35 °C を固定し、R134a の閉回路を 600 s 計算します。最初に `cycle.Q_cooling`、`cycle.P_el`、`cycle.COP` を確認します。600 s の記録は冷房 2.996 kW、電力 0.745 kW、COP 4.023。次に `cycle.T1`～`cycle.T4` と両圧力を表示すると、圧縮・凝縮・絞り・蒸発に対応する状態点を追えます。[モデル](Examples/RatedCooling.mo)・[時系列](Resources/Reference/results.csv)
+室内 25 °C、室外 35 °C を固定し、R134a の閉回路を 600 s 計算します。最初に `cycle.Q_cooling`、`cycle.P_el`、`cycle.COP` を確認します。600 s の記録は冷房 2.996 kW、電力 0.745 kW、COP 4.023。次に `cycle.T1`～`cycle.T4` と両圧力を表示すると、圧縮・凝縮・絞り・蒸発に対応する状態点を追えます。[モデル](Examples/CoolingCycles/RatedCooling.mo)・[時系列](Resources/Reference/results.csv)
 
 ### OutdoorTemperatureRamp　外気温上昇への応答
 
-室内を 25 °C に保ち、120～240 s で室外を 35 °C から 40 °C へ上げ、600 s まで計算します。`airTemperature.y`、`cycle.pHigh`、`cycle.P_el`、`cycle.COP` を同じ時間軸で比較します。ランプ終了後にも熱交換器の蓄積による応答が続きます。600 s の COP は 3.500。定格例との比較で、外気温の影響を切り分けられます。[モデル](Examples/OutdoorTemperatureRamp.mo)・[外気温と回路応答のグラフ](Resources/Reference/outdoor_response.png)
+室内を 25 °C に保ち、120～240 s で室外を 35 °C から 40 °C へ上げ、600 s まで計算します。`airTemperature.y`、`cycle.pHigh`、`cycle.P_el`、`cycle.COP` を同じ時間軸で比較します。ランプ終了後にも熱交換器の蓄積による応答が続きます。600 s の COP は 3.500。定格例との比較で、外気温の影響を切り分けられます。[モデル](Examples/CoolingCycles/OutdoorTemperatureRamp.mo)・[外気温と回路応答のグラフ](Resources/Reference/outdoor_response.png)
 
 ### CompressorReplacement　圧縮機の差し替え
 
-定格例の配管と温度境界を使い、圧縮機を `FixedFlowCompressor` に変更して 600 s 計算します。`cycle.compressor.m_flow` は設定値 0.016 kg/s。`cycle.valve.m_flow` と重ねると、過渡中の流量差が熱交換器の冷媒在庫を変え、運転点に近づく過程を読めます。600 s の冷房能力は 2.487 kW です。[モデル](Examples/CompressorReplacement.mo)・[交換した圧縮機](Examples/FixedFlowCompressor.mo)
+定格例の配管と温度境界を使い、圧縮機を `FixedFlowCompressor` に変更して 600 s 計算します。`cycle.compressor.m_flow` は設定値 0.016 kg/s。`cycle.valve.m_flow` と重ねると、過渡中の流量差が熱交換器の冷媒在庫を変え、運転点に近づく過程を読めます。600 s の冷房能力は 2.487 kW です。[モデル](Examples/CoolingCycles/CompressorReplacement.mo)・[交換した圧縮機](Examples/BaseClasses/FixedFlowCompressor.mo)
 
 ### RotaryCooling　熱連成ロータリーの閉回路
 
-定格例に熱連成ロータリーを組み込み、R134a で 0.21 s 計算します。`cycle.compressor.cylinder.pocketA.p` と `cycle.compressor.reed.lift` で圧縮・吐出のタイミングを確認します。回転単位の性能は例題直下の `meanPower` [W] と `meanDelivery` [kg/s] で読みます。10回転目の平均は約 808 W と 0.02183 kg/s。標準例の 600 s 時点とは集計時間が異なります。[モデル](Examples/RotaryCooling.mo)・[作動室と弁の波形](Resources/Reference/rotary_waveform.png)
+定格例に熱連成ロータリーを組み込み、R134a で 0.21 s 計算します。`cycle.compressor.cylinder.pocketA.p` と `cycle.compressor.reed.lift` で圧縮・吐出のタイミングを確認します。回転単位の性能は例題直下の `meanPower` [W] と `meanDelivery` [kg/s] で読みます。10回転目の平均は約 808 W と 0.02183 kg/s。標準例の 600 s 時点とは集計時間が異なります。[モデル](Examples/CoolingCycles/RotaryCooling.mo)・[作動室と弁の波形](Resources/Reference/rotary_waveform.png)
 
 ### AdiabaticRotaryCooling　断熱ロータリーの閉回路
 
-`RotaryCooling` と同じ空気境界・計算時間で断熱ロータリーに交換します。`meanPower` と `meanDelivery` が回路としての比較量、`cycle.compressor.driveLoss` が圧縮機内の瞬時散逸動力です。R134a の10回転目は約 807 W と 0.02206 kg/s。両閉回路例の既定は `useDetailedLosses=false` です。[モデル](Examples/AdiabaticRotaryCooling.mo)・[冷媒別の回転平均](Resources/Reference/adiabatic_cycle.csv)
+`RotaryCooling` と同じ空気境界・計算時間で断熱ロータリーに交換します。`meanPower` と `meanDelivery` が回路としての比較量、`cycle.compressor.driveLoss` が圧縮機内の瞬時散逸動力です。R134a の10回転目は約 807 W と 0.02206 kg/s。両閉回路例の既定は `useDetailedLosses=false` です。[モデル](Examples/CoolingCycles/AdiabaticRotaryCooling.mo)・[冷媒別の回転平均](Resources/Reference/adiabatic_cycle.csv)
 
 ## 圧縮機と部品の単体例題
+
+単体運転は `CompressorTests`、損失の比較は `LossStudies`、アキュームレータを単独で試す場合は `ComponentTests` を選びます。
 
 ### PartialRotaryBench　圧縮機の共通試験台
 
@@ -301,23 +303,23 @@ OMEdit で Modelica 4.1.0 と ExternalMedia 4.1.1 を読み込み、`AirConditio
 
 ### RotaryCompressorStandalone　熱連成版の基本運転
 
-効率と一定付帯損失による電動機モデルを用いて、指定背圧に対する吐出量を調べます。`dischargeFlow` [kg/s] と `dischargeTemperature` [K] は吐出境界での結果です。`compressor.shell.Twall` と比較すると、金属壁温と吐出ガス温度を区別できます。R134a の最終完了回転では 22.57 g/s、吐出温度 61.76 °C でした。[モデル](Examples/RotaryCompressorStandalone.mo)・[単体試験の記録](Resources/Reference/standalone_compressors.csv)
+効率と一定付帯損失による電動機モデルを用いて、指定背圧に対する吐出量を調べます。`dischargeFlow` [kg/s] と `dischargeTemperature` [K] は吐出境界での結果です。`compressor.shell.Twall` と比較すると、金属壁温と吐出ガス温度を区別できます。R134a の最終完了回転では 22.57 g/s、吐出温度 61.76 °C でした。[モデル](Examples/CompressorTests/RotaryCompressorStandalone.mo)・[単体試験の記録](Resources/Reference/standalone_compressors.csv)
 
 ### RotaryCompressorLossTest　熱連成版の損失内訳
 
-上と同じ試験台で `useDetailedLosses=true` を指定します。`compressor.losses.power` は瞬時値、`compressor.losses.meanPower` は直前1回転の平均です。R134a の11回転目では電力 792.3 W、銅損 31.42 W、軸受摩擦 42.45 W。全損失チャネルの単純和は電気入力に一致しません。電力分配を調べるときは駆動系の運動エネルギー変化を含む第15章の収支を使います。[モデル](Examples/RotaryCompressorLossTest.mo)・[チャネル別の記録](Resources/Reference/compressor_losses.csv)
+上と同じ試験台で `useDetailedLosses=true` を指定します。`compressor.losses.power` は瞬時値、`compressor.losses.meanPower` は直前1回転の平均です。R134a の11回転目では電力 792.3 W、銅損 31.42 W、軸受摩擦 42.45 W。全損失チャネルの単純和は電気入力に一致しません。電力分配を調べるときは駆動系の運動エネルギー変化を含む第15章の収支を使います。[モデル](Examples/LossStudies/RotaryCompressorLossTest.mo)・[チャネル別の記録](Resources/Reference/compressor_losses.csv)
 
 ### AdiabaticRotaryStandalone　断熱版の損失と作動室圧力
 
-同じ吸入・吐出条件で、断熱ロータリーと詳細損失を使います。`compressor.driveLoss`、`compressor.cylinder.pocketA.p`、`compressor.reed.lift` を選ぶと、駆動損失と作動室の一周期を追えます。熱連成の損失例と同じ11回転目の平均は電力 789.6 W、流量 22.48 g/s、吐出温度 61.71 °C。短時間の比較であり、長時間の壁温の推移は熱連成版で調べます。[モデル](Examples/AdiabaticRotaryStandalone.mo)・[断熱単体の記録](Resources/Reference/adiabatic_standalone.csv)
+同じ吸入・吐出条件で、断熱ロータリーと詳細損失を使います。`compressor.driveLoss`、`compressor.cylinder.pocketA.p`、`compressor.reed.lift` を選ぶと、駆動損失と作動室の一周期を追えます。熱連成の損失例と同じ11回転目の平均は電力 789.6 W、流量 22.48 g/s、吐出温度 61.71 °C。短時間の比較であり、長時間の壁温の推移は熱連成版で調べます。[モデル](Examples/CompressorTests/AdiabaticRotaryStandalone.mo)・[断熱単体の記録](Resources/Reference/adiabatic_standalone.csv)
 
 ### AccumulatorWetInlet　湿り吸入の液保持
 
-圧縮機からアキュームレータだけを取り出し、R134a を 375 kPa、入口乾き度 0.80 で供給し、出口から 0.012 kg/s を取り出します。0.5 s の間に `accumulator.liquidMass` が 2.463 g から 3.979 g に増加します。`accumulator.outlet.h_outflow` と `hDew` を重ね、容器に液を保持したまま飽和蒸気を取り出せていることを確認します。[モデル](Examples/AccumulatorWetInlet.mo)
+圧縮機からアキュームレータだけを取り出し、R134a を 375 kPa、入口乾き度 0.80 で供給し、出口から 0.012 kg/s を取り出します。0.5 s の間に `accumulator.liquidMass` が 2.463 g から 3.979 g に増加します。`accumulator.outlet.h_outflow` と `hDew` を重ね、容器に液を保持したまま飽和蒸気を取り出せていることを確認します。[モデル](Examples/ComponentTests/AccumulatorWetInlet.mo)
 
 ## 冷媒別の例題
 
-`Examples.RefrigerantTests` には下記の24例があります。各段落の四つのクラスは順に R290、R32、R410A、CO₂ 用です。R134a の対応例は直前の2節にあります。R290・R32・R410A の閉回路は室内 25 °C／外気 35 °C、CO₂ の閉回路は室内 25 °C／外気 −10 °C。CO₂ は蒸発・凝縮の初期飽和温度を −10／8 °C に置く亜臨界条件です。[各例の定義](Examples/RefrigerantTests.mo)・[境界条件と冷媒別の数値](RefrigerantTests.md)
+`Examples.RefrigerantTests` には冷媒別の4フォルダに各8例があります。ここでは単気筒などの24例を説明し、ツインの8例は後述します。各段落の四つのクラスは順に R290、R32、R410A、CO₂ 用です。R134a の対応例は直前の2節にあります。R290・R32・R410A の閉回路は室内 25 °C／外気 35 °C、CO₂ の閉回路は室内 25 °C／外気 −10 °C。CO₂ は蒸発・凝縮の初期飽和温度を −10／8 °C に置く亜臨界条件です。[各例の定義](Examples/RefrigerantTests/package.mo)・[境界条件と冷媒別の数値](RefrigerantTests.md)
 
 ### 閉回路で比べる3種類
 
@@ -469,7 +471,7 @@ $$
 
 $A_{\max}=1.5$ mm²、$C_d=0.72$、$u_b=0.5$、$K_\alpha=4$、$\alpha_{\rm set}=0.20$。断熱絞りとして流量を準定常で求め、質量・エネルギーは蓄積しません。運転中は $\Delta p>0$ を検査します。
 
-**実装**　[DisplacementCompressor.mo](Components/DisplacementCompressor.mo) ・ [PartialIsentropicCompressor.mo](Components/PartialIsentropicCompressor.mo) ・ [FixedFlowCompressor.mo](Examples/FixedFlowCompressor.mo) ・ [ExpansionValve.mo](Components/ExpansionValve.mo)
+**実装**　[DisplacementCompressor.mo](Components/DisplacementCompressor.mo) ・ [PartialIsentropicCompressor.mo](Components/PartialIsentropicCompressor.mo) ・ [FixedFlowCompressor.mo](Examples/BaseClasses/FixedFlowCompressor.mo) ・ [ExpansionValve.mo](Components/ExpansionValve.mo)
 
 ## 4　冷媒物性と共通の容積モデル
 
@@ -776,15 +778,15 @@ $$
 
 `meanPower`・`meanDelivery` は一回転が終わるごとに更新され、次の更新まで保持されます。期間平均の軸速度は $60/\Delta t_n$ rpm です。リード弁直後の瞬時流量と外部吐出流量の差は、下流のマフラとシェルの蓄積に現れます。
 
-**実装**　[RollingPistonCompressor.mo](Components/Rotary/RollingPistonCompressor.mo) ・ [RotaryCooling.mo](Examples/RotaryCooling.mo) ・ [rotary_checks.py](Resources/Scripts/rotary_checks.py)
+**実装**　[RollingPistonCompressor.mo](Components/Rotary/RollingPistonCompressor.mo) ・ [RotaryCooling.mo](Examples/CoolingCycles/RotaryCooling.mo) ・ [rotary_checks.py](Resources/Scripts/rotary_checks.py)
 
 ## 11　初期条件と実行例
 
 ### 冷媒別の初期化
 
-`RefrigerantTests.StandardCase` は室内を 25 °C に固定し、冷媒と外気温、蒸発・凝縮の初期飽和温度 $T_{e0},T_{d0}$ を設定します。初期液体体積率は全冷媒で同じなので、初期充填**質量**は冷媒ごとに変わります。
+`Examples.BaseClasses.StandardCase` は室内を 25 °C に固定し、冷媒と外気温、蒸発・凝縮の初期飽和温度 $T_{e0},T_{d0}$ を設定します。初期液体体積率は全冷媒で同じなので、初期充填**質量**は冷媒ごとに変わります。
 
-`RefrigerantTests.RotaryCase` は、運転中の軸速度と各部の初期冷媒状態を設定します。次の $h_S,h_D$ は初期値の計算に用います。回転中の吐出比エンタルピーは第4–9章の式で決まります。
+`Examples.BaseClasses.RotaryCase` は、運転中の軸速度と各部の初期冷媒状態を設定します。次の $h_S,h_D$ は初期値の計算に用います。回転中の吐出比エンタルピーは第4–9章の式で決まります。
 
 $$
 \begin{aligned}
@@ -812,7 +814,7 @@ R134a の `RotaryCooling` は各部品の既定値を使用します。初期 $(
 
 `AccumulatorWetInlet` は単体試験です。供給圧力 $p_f=375$ kPa、供給乾き度 $x_f=0.80$、$h_f=(1-x_f)h_l(p_f)+x_fh_v(p_f)$ とし、この $h_f$ を容器の初期比エンタルピーにも設定します。下流から 0.012 kg/s の蒸気を取り出し、保持液が増えることを調べます。
 
-**実装**　[RefrigerantTests.mo](Examples/RefrigerantTests.mo) ・ [RatedCooling.mo](Examples/RatedCooling.mo) ・ [OutdoorTemperatureRamp.mo](Examples/OutdoorTemperatureRamp.mo) ・ [CompressorReplacement.mo](Examples/CompressorReplacement.mo) ・ [AccumulatorWetInlet.mo](Examples/AccumulatorWetInlet.mo)
+**実装**　[冷媒別例題](Examples/RefrigerantTests/package.mo) ・ [RatedCooling.mo](Examples/CoolingCycles/RatedCooling.mo) ・ [OutdoorTemperatureRamp.mo](Examples/CoolingCycles/OutdoorTemperatureRamp.mo) ・ [CompressorReplacement.mo](Examples/CoolingCycles/CompressorReplacement.mo) ・ [AccumulatorWetInlet.mo](Examples/ComponentTests/AccumulatorWetInlet.mo)
 
 ## 12　試験結果と方程式の照合
 
@@ -879,7 +881,7 @@ $$
 | R410A | 11 | 1.874 | 0.04702 | 74.0 |
 | CO₂ | 10 | 2.578 | 0.08493 | 34.7 |
 
-**実装と結果**　[RotaryCompressorStandalone.mo](Examples/RotaryCompressorStandalone.mo) ・ [RefrigerantTests.mo](Examples/RefrigerantTests.mo) ・ [単体試験の集計](Resources/Reference/standalone_compressors.csv)
+**実装と結果**　[RotaryCompressorStandalone.mo](Examples/CompressorTests/RotaryCompressorStandalone.mo) ・ [冷媒別例題](Examples/RefrigerantTests/package.mo) ・ [単体試験の集計](Resources/Reference/standalone_compressors.csv)
 
 ## 14　モーターと摺動部の損失
 
@@ -961,7 +963,7 @@ $$
 
 ## 16　損失評価を実行する
 
-OMEdit で `AirConditionerCycle.Examples.RotaryCompressorLossTest` を開き、シミュレーションを実行します。`compressor.losses.meanPower` のチャネル名を選ぶと、直前に完了した1回転平均 [W] を表示できます。対応する瞬時値は `compressor.losses.power` にあります。冷媒別の境界条件は第13章と同じです。
+OMEdit で `AirConditionerCycle.Examples.LossStudies.RotaryCompressorLossTest` を開き、シミュレーションを実行します。`compressor.losses.meanPower` のチャネル名を選ぶと、直前に完了した1回転平均 [W] を表示できます。対応する瞬時値は `compressor.losses.power` にあります。冷媒別の境界条件は第13章と同じです。
 
 | 冷媒 | 電気入力 [W] | モーター損失 [W] | 機械摩擦 [W] | 図示動力 [W] | 電気基準の効率 |
 |---|---:|---:|---:|---:|---:|
@@ -981,7 +983,7 @@ R134a の内訳は、銅損31.42 W、鉄損20.00 W、付帯18.00 W、軸受42.45
 
 既定の出力間隔は25 µs（許容誤差 $10^{-7}$）、CO₂ の損失例は質量収支を細かく検査するため12.5 µs（$3\times 10^{-8}$）です。各回転平均を出力波形から別途台形積分して照合し、質量、全圧縮機と駆動系のエネルギー収支を検査しました。5例での最大残差は冷媒質量 4.87e-08 kg、全圧縮機 0.0245 J、駆動系 0.00019 J でした。
 
-**実装と結果**　[単体の損失例題](Examples/RotaryCompressorLossTest.mo) ・ [5冷媒の全チャネルと検査残差](Resources/Reference/compressor_losses.csv) ・ [再実行手順](RotaryCompressor.md#損失評価)
+**実装と結果**　[単体の損失例題](Examples/LossStudies/RotaryCompressorLossTest.mo) ・ [5冷媒の全チャネルと検査残差](Resources/Reference/compressor_losses.csv) ・ [再実行手順](RotaryCompressor.md#損失評価)
 
 
 ## 17　断熱ロータリーの保存則とモデルの選び方
@@ -1025,7 +1027,7 @@ $$
 
 **実装**　[組立と損失](Components/Rotary/AdiabaticRollingPistonCompressor.mo) ・ [共通機構](Components/Rotary/BaseClasses/PartialRollingPiston.mo) ・ [作動室](Components/Rotary/Adiabatic/Cylinder.mo) ・ [電動機](Components/Rotary/Adiabatic/Motor.mo) ・ [高圧シェル](Components/Rotary/Adiabatic/DischargePlenum.mo)
 
-**例題と結果**　[断熱版の単体例](Examples/AdiabaticRotaryStandalone.mo) ・ [断熱版の閉回路例](Examples/AdiabaticRotaryCooling.mo) ・ [単体の損失と収支](Resources/Reference/adiabatic_standalone.csv) ・ [閉回路の回転平均](Resources/Reference/adiabatic_cycle.csv)
+**例題と結果**　[断熱版の単体例](Examples/CompressorTests/AdiabaticRotaryStandalone.mo) ・ [断熱版の閉回路例](Examples/CoolingCycles/AdiabaticRotaryCooling.mo) ・ [単体の損失と収支](Resources/Reference/adiabatic_standalone.csv) ・ [閉回路の回転平均](Resources/Reference/adiabatic_cycle.csv)
 
 ## ツインロータリーの構成と保存則
 
@@ -1056,19 +1058,19 @@ $$
 
 ### TwinRotaryStandalone　各弁の吐出を重ねる
 
-OMEdit で `Examples.TwinRotaryStandalone` を開き、0.23 s 計算します。R134a の既定値は吸入 0.37463 MPa、背圧 1.15992 MPa（ともに絶対圧）、吸入過熱度 5 K、回転数指令 3,000 rpm です。
+OMEdit で `Examples.CompressorTests.TwinRotaryStandalone` を開き、0.23 s 計算します。R134a の既定値は吸入 0.37463 MPa、背圧 1.15992 MPa（ともに絶対圧）、吸入過熱度 5 K、回転数指令 3,000 rpm です。
 
-`compressor.upper.reed.m_flow` と `compressor.lower.reed.m_flow` を同じ図に表示すると、二つの吐出パルスを追えます。`dischargeFlow` は共通吐出管で測った流量です。[単体例](Examples/TwinRotaryStandalone.mo)・[試験台と出力](Examples/BaseClasses/PartialCompressorBench.mo)
+`compressor.upper.reed.m_flow` と `compressor.lower.reed.m_flow` を同じ図に表示すると、二つの吐出パルスを追えます。`dischargeFlow` は共通吐出管で測った流量です。[単体例](Examples/CompressorTests/TwinRotaryStandalone.mo)・[試験台と出力](Examples/BaseClasses/PartialCompressorBench.mo)
 
 ![R134a単体試験の最後の完了回転で、上下の吐出リード弁と共通吐出管を流れる質量流量](Resources/Reference/twin_discharge_R134a.png)
 
 ### TwinRotaryCooling　冷凍回路に接続する
 
-`Examples.TwinRotaryCooling` は同じ圧縮機を標準冷凍回路に組み込みます。吸入・吐出圧力は蒸発器・凝縮器と一緒に解きます。0.21 s の計算中、`cycle.Q_cooling` と `cycle.P_el` は回路の冷房能力と電気入力、`cycle.compressor.upper.cylinder.pocketA.p` は上側作動室Aの瞬時圧力です。[閉回路例](Examples/TwinRotaryCooling.mo)
+`Examples.CoolingCycles.TwinRotaryCooling` は同じ圧縮機を標準冷凍回路に組み込みます。吸入・吐出圧力は蒸発器・凝縮器と一緒に解きます。0.21 s の計算中、`cycle.Q_cooling` と `cycle.P_el` は回路の冷房能力と電気入力、`cycle.compressor.upper.cylinder.pocketA.p` は上側作動室Aの瞬時圧力です。[閉回路例](Examples/CoolingCycles/TwinRotaryCooling.mo)
 
 R134a 単体例の最後の完了回転（11回転目）で、上下の弁はそれぞれ平均 11.52 g/s を吐出し、ピークの軸角差は約 180° でした。共通吐出管は平均 22.23 g/s、電気入力は平均 731.8 W です。この区間でもマフラとシェルの保有量が変化します。値は設定した寸法と運転初期条件に対する短時間の計算結果です。
 
-`Examples.RefrigerantTests` では R290、R32、R410A、亜臨界 CO₂ の各冷媒について、名前が `TwinStandalone` と `TwinCooling` で終わる例を選べます。CO₂ は蒸発 −10 °C、凝縮 8 °C で初期化し、室外を −10 °C とします。他の4冷媒は蒸発 7 °C、凝縮 45 °C、室外 35 °C、全冷媒で室内は 25 °C です。下側は開始時すでに半回転進んだ位置にあり、両室を吸入圧付近から始動させます。[冷媒別例題](Examples/RefrigerantTests.mo)・[再実行スクリプト](Resources/Scripts/run_twin_tests.py)
+`Examples.RefrigerantTests` では R290、R32、R410A、亜臨界 CO₂ の各冷媒について、名前が `TwinStandalone` と `TwinCooling` で終わる例を選べます。CO₂ は蒸発 −10 °C、凝縮 8 °C で初期化し、室外を −10 °C とします。他の4冷媒は蒸発 7 °C、凝縮 45 °C、室外 35 °C、全冷媒で室内は 25 °C です。下側は開始時すでに半回転進んだ位置にあり、両室を吸入圧付近から始動させます。[冷媒別例題](Examples/RefrigerantTests/package.mo)・[再実行スクリプト](Resources/Scripts/run_twin_tests.py)
 
 ## ツインロータリーの冷媒別試験結果
 
@@ -1128,7 +1130,7 @@ $$
 
 ## シリンダすきまの比較試験
 
-OMEdit で単気筒は `Examples.RotaryClearanceStudy`、ツインは `Examples.TwinRotaryClearanceStudy` を開きます。`gaps.radialGap`、`gaps.topGap`、`gaps.bottomGap` [m] に 0 を設定すると、それぞれ対応する経路が閉じます。従来例の既定は3経路とも 0 で、ベーン先端の有効すきまは 3 µm です。比較例では上下気筒に同じ寸法を適用します。部品を直接組み込む場合は各気筒の `cylinder.clearances` に別々の値を与えられます。[単気筒の例](Examples/RotaryClearanceStudy.mo)・[ツインの例](Examples/TwinRotaryClearanceStudy.mo)
+OMEdit で単気筒は `Examples.LossStudies.RotaryClearanceStudy`、ツインは `Examples.LossStudies.TwinRotaryClearanceStudy` を開きます。`gaps.radialGap`、`gaps.topGap`、`gaps.bottomGap` [m] に 0 を設定すると、それぞれ対応する経路が閉じます。従来例の既定は3経路とも 0 で、ベーン先端の有効すきまは 3 µm です。比較例では上下気筒に同じ寸法を適用します。部品を直接組み込む場合は各気筒の `cylinder.clearances` に別々の値を与えられます。[単気筒の例](Examples/LossStudies/RotaryClearanceStudy.mo)・[ツインの例](Examples/LossStudies/TwinRotaryClearanceStudy.mo)
 
 R134a、吸入 0.37463 MPa・吐出 1.15992 MPa（絶対圧）、吸入過熱度 5 K、回転数指令 3,000 rpm。全ケースとも断熱圧縮機を 0.23 s 計算します。表は最後の完了回転の平均値です。漏れは経路ごとの絶対値を合計、吐出は共通吐出管の流量です。初期のガス保有量が変化するため、この短時間の吐出量にはマフラとシェルの蓄積変化も含まれます。
 
