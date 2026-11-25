@@ -10,7 +10,8 @@ model CylinderUnit "断熱ツインロータリーの1気筒分の機構・吸�
     annotation(Placement(transformation(extent={{-10,-110},{10,-90}})));
   SuctionPipe suctionPipe(redeclare final package Medium=Medium)
     annotation(Placement(transformation(origin={-64,40},extent={{-12,-12},{12,12}})));
-  Cylinder cylinder(redeclare final package Medium=Medium)
+  Cylinder cylinder(redeclare final package Medium=Medium,
+    final axialHeight=roller.height,final boreRadius=roller.R,final eccentricity=roller.e)
     annotation(Placement(transformation(origin={0,40},extent={{-20,-20},{20,20}})));
   DischargeReed reed(redeclare final package Medium=Medium)
     annotation(Placement(transformation(origin={66,40},extent={{-12,-12},{12,12}})));

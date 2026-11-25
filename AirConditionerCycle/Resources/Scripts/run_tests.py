@@ -13,7 +13,7 @@ EXAMPLES = ("RatedCooling", "OutdoorTemperatureRamp", "CompressorReplacement")
 PACKAGE = Path(__file__).resolve().parents[2] / "package.mo"
 
 
-def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples", end_values=(), tolerance=1e-7):
+def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples", end_values=(), tolerance=1e-7, model_file=None):
     commands = []
     for env, setter in (("CC", "setCompiler"), ("CXX", "setCXXCompiler")):
         if os.environ.get(env):
@@ -22,6 +22,9 @@ def run_omc(compiler, work, cases=None, namespace="AirConditionerCycle.Examples"
     for call in ('loadModel(Modelica, {"4.1.0"})',
                  'loadModel(ExternalMedia, {"4.1.1"})', f'loadFile("{package}")'):
         commands.append(f'if not {call} then print(getErrorString()); exit(1); end if;')
+    if model_file is not None:
+        path = model_file.resolve().as_posix().replace('"', '\\"')
+        commands.append(f'if not loadFile("{path}") then print(getErrorString()); exit(1); end if;')
     if cases is None:
         cases = [(name, 600, 300, ".*") for name in EXAMPLES] + [
             ("RotaryCooling", 0.21, 8400, ROTARY_FILTER),

@@ -5,6 +5,8 @@ GasPocket
 FixedVolume
 Pipe
 pressureDropPower
+CylinderClearances
+slitLeakFlow
 PartialCylinder
 PartialMotor
 ShaftMechanics

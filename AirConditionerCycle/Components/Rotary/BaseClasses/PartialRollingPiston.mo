@@ -17,7 +17,8 @@ partial model PartialRollingPiston "ロータリーの共通冷媒回路・駆�
     annotation(Placement(transformation(origin={-80,46},extent={{-11,-11},{11,11}})));
   SuctionPipe suctionPipe(redeclare final package Medium=Medium)
     annotation(Placement(transformation(origin={-45,46},extent={{-10,-10},{10,10}})));
-  CylinderModel cylinder(redeclare final package Medium=Medium)
+  CylinderModel cylinder(redeclare final package Medium=Medium,
+    final axialHeight=roller.height,final boreRadius=roller.R,final eccentricity=roller.e)
     annotation(Placement(transformation(origin={-6,46},extent={{-12,-12},{12,12}})));
   DischargeReed reed(redeclare final package Medium=Medium)
     annotation(Placement(transformation(origin={32,46},extent={{-10,-10},{10,10}})));
