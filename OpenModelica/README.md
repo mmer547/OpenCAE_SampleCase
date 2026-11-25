@@ -1,44 +1,25 @@
-# OpenModelica_SampleCases
+# OpenModelica のサンプルケース
 
-OpenModelica で動作確認するためのサンプルケース集です。  
-現時点では、冷媒圧縮機の簡易 1 室モデル `Compression_Chamber` を収録しています。
+## AirConditionerCycle — 冷凍サイクル
 
-## 収録モデル
+圧縮機、凝縮器、膨張弁、蒸発器を組み合わせた冷凍サイクルです。圧縮機を差し替えてサイクル全体を計算する例と、圧縮機単体の試験例を収録しています。[ライブラリの導入と OMEdit での実行方法](AirConditionerCycle/README.md)
 
-### `Compression_Chamber`
+圧縮機の構造や計算結果は、[ロータリ・ツインロータリ圧縮機](AirConditionerCycle/RotaryCompressor.md)、[ノーベル圧縮機](AirConditionerCycle/NobelCompressor.md)、[スクロール圧縮機](AirConditionerCycle/ScrollCompressor.md)の解説を参照してください。
 
-`Compression_Chamber/Compression_Chamber.mo` に、以下の構成が含まれます。
+## Compression_Chamber — 冷媒圧縮機の圧縮室
 
-- `Components`
-  - `CompressionChamber`: 圧縮室（質量・エネルギー収支、周期体積変化）
-  - `SuctionChamber`: 吸入側境界、主吸入流量、漏れ流量
-  - `DischargeValve`: 吐出弁（一方向流れの簡易モデル）
-  - `DischargeBoundary`: 吐出圧力境界
-  - `SystemParameters`: 共通パラメータ（圧力・温度・面積・流量係数など）
-- `Media`
-  - `CO2`, `R32`, `R410A`（`ExternalMedia.Media.CoolPropMedium` を利用）
-- `Interfaces`
-  - `port_in`, `port_out`, `port_leak` などのコネクタ定義
-- `Examples`
-  - `SimpleChamberTest`: 主要コンポーネントを接続したテストモデル
+容積が周期的に変化する1室の質量・エネルギー収支を解き、吸入、漏れ、吐出弁を通る流れを計算します。[モデルファイル](Compression_Chamber/Compression_Chamber.mo)
 
-## 実行方法（OpenModelica）
+- `Components` に圧縮室、吸入側境界、吐出弁、吐出圧力境界があり、`Interfaces` に各ポートの定義があります。
+- `SystemParameters` で圧力、温度、流路面積、流量係数などを設定します。
+- `Media` は CO₂、R32、R410A の物性計算に ExternalMedia の CoolProp バックエンドを使用します。
 
-1. OpenModelica（OMEdit）を起動
-2. `Compression_Chamber/Compression_Chamber.mo` を読み込み
-3. クラスブラウザから `Compression_Chamber.Examples.SimpleChamberTest` を開く
-4. シミュレーション実行（必要に応じて stop time / solver を調整）
-5. `compressionChamber.p`, `compressionChamber.T`, `dischargeValve.m_flow_out` などをプロット
+### OMEdit で圧縮室を計算する
 
-## 依存関係
+1. Modelica 4.1.0 と ExternalMedia（CoolProp バックエンド）を用意します。
+2. OMEdit で `Compression_Chamber/Compression_Chamber.mo` を読み込み、`Compression_Chamber.Examples.SimpleChamberTest` を実行します。
+3. 圧縮室の圧力 `compressionChamber.p`、温度 `compressionChamber.T`、吐出質量流量 `dischargeValve.m_flow_out` をプロットします。
 
-- `Modelica` 4.1.0
-- `ExternalMedia`（CoolProp backend を利用）
+## Oil_Circuit — 油回路
 
-`Media` パッケージは `ExternalMedia.Media.CoolPropMedium` を拡張しています。  
-環境によっては、OpenModelica 側で ExternalMedia/CoolProp の導入と設定が必要です。
-
-## 追加予定
-
-このリポジトリはサンプルケースを追加していく前提です。  
-現状は `Compression_Chamber` のみを収録しています。
+容積式ポンプから送り出した油が流路抵抗と3本の並列オリフィスを通り、圧力境界へ戻る回路です。OMEdit で [OilCircuit.mo](Oil_Circuit/OilCircuit.mo) を読み込み、`OilCircuit.Tests.test1` を実行します。
