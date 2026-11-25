@@ -4,6 +4,19 @@
 
 **断熱版** `Components.Rotary.AdiabaticRollingPistonCompressor` と **熱連成版** `Components.Rotary.RollingPistonCompressor` は、同じ吸入・吐出ポート、ローラ形状、二つの作動室、リード弁と駆動機構を使います。両方とも電力、吐出流量、吐出冷媒温度を求めます。
 
+ベーン先端のほか、ローラ外周・上端面・下端面からの室間漏れを個別に評価できます。[追加すきまの式](PhysicalEquations.md#シリンダの半径すきまと端面すきま) ／ [単気筒・ツインの比較](PhysicalEquations.md#シリンダすきまの比較試験)
+
+### 追加すきまを比較する
+
+単気筒では `compressor.cylinder.radialLeakAB`、ツインでは `compressor.upper.cylinder.radialLeakAB` と `compressor.lower.cylinder.radialLeakAB` が外周すきまの瞬時漏れ量 [kg/s] です。`topFaceLeakAB` と `bottomFaceLeakAB` は各端面を通る流量で、A→B が正です。閉回路で同じ仮定を試す場合、`Examples.RotaryCooling` は `cycle.compressor.cylinder.clearances`、`Examples.TwinRotaryCooling` は上下各シリンダの `clearances` に値を設定します。ベーン背室の圧力を指定する必要はありません。
+
+パッケージのディレクトリから、R134a の8条件と、ほかの冷媒・片面の短時間試験を再実行できます。
+
+```sh
+python Resources/Scripts/run_clearance_tests.py --csv clearance_results.csv
+python Resources/Scripts/run_clearance_tests.py --smoke --csv clearance_smoke.csv
+```
+
 ## 断熱版の単体試験
 
 OMEdit で **Examples → AdiabaticRotaryStandalone** を実行します。吸入圧力・吐出背圧・吸入過熱度・回転数を変更できます。5冷媒の単体例では詳細損失を有効にしています。比較対象は同じ損失設定の `RotaryCompressorLossTest` です。吸入から吐出までのダイアグラムを開くと、冷媒ポートと機械フランジをたどれます。
@@ -99,7 +112,7 @@ python Resources/Scripts/run_standalone_tests.py --losses --fluid all --csv comp
 |---|---|---|
 | アキュームレータ | `accumulator` | 容器内の質量・内部エネルギー、気液平衡、液の保持量。上部から、二相時は飽和蒸気、乾き運転時は容器内の蒸気を取り出す |
 | 吸入管 | `suctionPipe` | 内径・長さ・局部損失係数から求める圧力損失 |
-| シリンダ・吸入ポート | `cylinder` | 作動室 A・B の質量とエネルギー、吸入ポート流量、ベーンすきまを通る室間漏れ、壁との熱交換 |
+| シリンダ・吸入ポート | `cylinder` | 作動室 A・B の質量とエネルギー、吸入ポート流量、ベーン先端・外周・上下端面の室間漏れ、壁との熱交換 |
 | 吐出リード弁 | `reed` | 差圧と開弁圧から求めた目標リフトへの二次応答。有効開口面積と上流状態から正方向の吐出流量を計算 |
 | 吐出マフラ | `muffler` | 膨張室の圧縮性と出口絞りによる圧力脈動の減衰 |
 | 高圧シェル | `shell` | 高圧ガスの蓄積、筐体の熱容量、ガスとの熱交換、モーター・摺動部からの受熱、外気への放熱 |

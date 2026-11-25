@@ -100,7 +100,8 @@ def main():
     parser.add_argument("--csv", type=Path)
     args = parser.parse_args()
     if args.smoke:
-        runs = [("Single","Both",fluid,0.045) for fluid in ("R290","R32","R410A","CO2")]
+        runs = [(model, "Both", fluid, 0.045) for model in ("Single", "Twin")
+                for fluid in ("R290", "R32", "R410A", "CO2")]
         runs += [("Single",case,"R134a",0.045) for case in ("Top","Bottom")]
     else:
         runs = [(model,case,"R134a",0.23) for model in ("Single","Twin") for case in ("Base","Radial","Faces","Both")]

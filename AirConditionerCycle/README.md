@@ -8,6 +8,8 @@ R134a を用いた空調機の冷房サイクルです。圧縮機 → 凝縮器
 
 接続図のポート名から、受け渡す量・単位・正方向と接続先を確認できます。[コネクタの読み方](PhysicalEquations.md#冷媒と熱のコネクタ) ／ [機械・容積ポート](PhysicalEquations.md#機械フランジと作動室の容積ポート) ／ [信号](PhysicalEquations.md#制御信号と計測入力) ／ [内部サブコンポーネント](PhysicalEquations.md#圧縮機の内部サブコンポーネント) ／ [例題の境界部品](PhysicalEquations.md#例題の境界サブコンポーネント)
 
+シリンダ内の漏れは、単気筒の `Examples.RotaryClearanceStudy` と2気筒の `Examples.TwinRotaryClearanceStudy` で比較できます。半径すきま・上端面・下端面を個別に設定します。[流路と方程式](PhysicalEquations.md#シリンダの半径すきまと端面すきま) ／ [例題と比較結果](PhysicalEquations.md#シリンダすきまの比較試験)
+
 ## 圧縮機を選ぶ
 
 ZIP を展開して OMEdit で `AirConditionerCycle/package.mo` を開き、`Examples` から次の例を実行します。ロータリーの機構と損失を追うには **AdiabaticRotaryStandalone** から始めてください。
