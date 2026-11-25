@@ -1,5 +1,8 @@
 # ロータリー圧縮機
 
+一体ブレードと揺動ブッシュを持つノーベルコンプレッサーは、専用ガイドで機構図・各部品の式・例題を確認できます。[単気筒のノーベルコンプレッサー](NobelCompressor.md)
+
+
 2気筒を使う場合は `Examples.TwinRotaryStandalone` または `Examples.TwinRotaryCooling` を開きます。[部品・力学・冷媒合流の説明](PhysicalEquations.md#ツインロータリーの構成と保存則) ／ [2気筒の例題と波形](PhysicalEquations.md#ツインロータリーの実行例)
 
 **断熱版** `Components.Rotary.AdiabaticRollingPistonCompressor` と **熱連成版** `Components.Rotary.RollingPistonCompressor` は、同じ吸入・吐出ポート、ローラ形状、二つの作動室、リード弁と駆動機構を使います。両方とも電力、吐出流量、吐出冷媒温度を求めます。
