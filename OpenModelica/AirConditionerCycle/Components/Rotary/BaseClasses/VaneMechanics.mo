@@ -1,23 +1,17 @@
 within AirConditionerCycle.Components.Rotary.BaseClasses;
 model VaneMechanics "ベーンの並進運動・ばね・摺動摩擦・先端漏れ"
+  extends PartialBladeGuide;
   import SI = Modelica.Units.SI;
   parameter SI.Mass mass(min=1e-5)=0.009;
   parameter SI.TranslationalSpringConstant k(min=1)=1600;
   parameter SI.Length freeExtension=0.016 "ばね自然長に対応する伸び位置";
   parameter SI.TranslationalDampingConstant damping(min=0)=1.6;
   parameter SI.Force slidingFriction(min=0)=3;
-  parameter SI.Length height(min=1e-4)=0.0455;
   parameter SI.Length tipGap(min=0)=3e-6 "有効先端すきま";
-  Modelica.Mechanics.Translational.Interfaces.Flange_a tip
-    annotation(Placement(transformation(extent={{-10,90},{10,110}})));
-  Modelica.Blocks.Interfaces.RealOutput leakArea(unit="m2")
-    annotation(Placement(transformation(extent={{90,30},{110,50}})));
-  SI.Velocity v;
-  SI.Force friction;
-  SI.Energy E "ベーンの運動・ばねエネルギー";
 equation
   v = der(tip.s);
   friction = damping*v + slidingFriction*tanh(v/0.02);
+  frictionPower = friction*v;
   tip.f = mass*der(v) + k*(tip.s-freeExtension) + friction;
   E = mass*v^2/2 + k*(tip.s-freeExtension)^2/2;
   leakArea = height*tipGap;

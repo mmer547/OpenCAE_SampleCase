@@ -10,7 +10,8 @@ partial model PartialRollingPiston "ロータリーの共通冷媒回路・駆�
   parameter SI.Length height=0.0455 "シリンダ軸方向長さ";
   replaceable model MotorModel = AirConditionerCycle.Components.Rotary.Motor constrainedby BaseClasses.PartialMotor;
   replaceable model ShaftModel = AirConditionerCycle.Components.Rotary.EccentricShaft constrainedby BaseClasses.ShaftMechanics;
-  replaceable model VaneModel = AirConditionerCycle.Components.Rotary.Vane constrainedby BaseClasses.VaneMechanics;
+  replaceable model RollerModel = AirConditionerCycle.Components.Rotary.Roller constrainedby BaseClasses.PartialChamberGeometry;
+  replaceable model VaneModel = AirConditionerCycle.Components.Rotary.Vane constrainedby BaseClasses.PartialBladeGuide;
   replaceable model CylinderModel = AirConditionerCycle.Components.Rotary.Cylinder constrainedby BaseClasses.PartialCylinder;
   replaceable model ShellModel = AirConditionerCycle.Components.Rotary.Shell constrainedby BaseClasses.FixedVolume;
   Accumulator accumulator(redeclare final package Medium=Medium)
@@ -33,7 +34,7 @@ partial model PartialRollingPiston "ロータリーの共通冷媒回路・駆�
     annotation(Placement(transformation(origin={-82,-29},extent={{-10,-10},{10,10}})));
   ShaftModel shaft(eccentricity=eccentricity,faceRadius=cylinderRadius-eccentricity,final useOilFilm=useDetailedLosses)
     annotation(Placement(transformation(origin={-48,-29},extent={{-10,-10},{10,10}})));
-  Roller roller(R=cylinderRadius,e=shaft.eccentricity,height=height)
+  RollerModel roller(R=cylinderRadius,e=shaft.eccentricity,height=height)
     annotation(Placement(transformation(origin={-6,-29},extent={{-12,-12},{12,12}})));
   VaneModel vane(height=height)
     annotation(Placement(transformation(origin={-6,-67},extent={{-11,-11},{11,11}})));
@@ -42,7 +43,7 @@ partial model PartialRollingPiston "ロータリーの共通冷媒回路・駆�
     leakRate=noEvent(abs(cylinder.leakAB)), delivered=-outlet.m_flow,
     theoretical=Medium.density_ph(inlet.p,h_in)*roller.displacement*motor.w/(2*Modelica.Constants.pi),
     power={motor.copperLoss, motor.ironLoss, motor.idleLoss, shaft.bearingTorque*shaft.w,
-      vane.friction*vane.v, shaft.oilFilmLoss,
+      vane.frictionPower, shaft.oilFilmLoss,
       noEvent(dropPower(accumulator.m_flow,accumulator.inlet.p-accumulator.gas.p,Medium.density_ph(inlet.p,h_in))
         + dropPower(suctionPipe.m_flow,suctionPipe.dp,Medium.density_ph(suctionPipe.inlet.p,suctionPipe.h_in))
         + dropPower(cylinder.m_flow,cylinder.inlet.p-cylinder.pSuction,Medium.density_ph(cylinder.inlet.p,cylinder.h_in))),

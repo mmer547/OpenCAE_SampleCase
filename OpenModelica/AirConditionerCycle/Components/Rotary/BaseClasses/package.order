@@ -10,5 +10,7 @@ slitLeakFlow
 PartialCylinder
 PartialMotor
 ShaftMechanics
+PartialChamberGeometry
+PartialBladeGuide
 VaneMechanics
 PartialRollingPiston

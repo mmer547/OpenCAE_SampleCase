@@ -94,7 +94,8 @@ def check_rotary(path, waveform_csv, stop_time=0.21, high_pressure_limit=math.in
             writer = csv.DictWriter(stream, fieldnames=points[0])
             writer.writeheader()
             writer.writerows(p for p in points[:end+1] if p["revolution"] >= completed-2)
-    print(f"RotaryCooling             {completed} complete rev, last full rev: "
+    example = path.name.removesuffix("_res.csv")
+    print(f"{example:<24} {completed} complete rev, last full rev: "
           f"{rows[-1]['meanPower']:.2f} W, {rows[-1]['meanDelivery']:.5f} kg/s; "
           f"max cycle energy residual {errors[2]:.4f} J")
     return dict(completed_revolutions=completed, last_revolution_rpm=60/duration,

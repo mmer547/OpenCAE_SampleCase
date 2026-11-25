@@ -2,7 +2,7 @@ within AirConditionerCycle.Components.Rotary;
 block LossReport "損失・図示仕事と効率（瞬時値と直前の完了回転平均）"
   import SI = Modelica.Units.SI;
   type Channel = enumeration(copper "巻線銅損", iron "鉄損", auxiliary "一定付帯損失",
-    bearing "軸受摩擦", vane "ベーン摺動", oilFilm "ローラ端面油膜",
+    bearing "軸受摩擦", vane "ベーン摺動／ノーベルコンプレッサーではブッシュの摺動・揺動摩擦", oilFilm "ローラ端面油膜",
     suctionDrop "吸入側圧損の仕事率近似", dischargeDrop "吐出側圧損の仕事率近似",
     leakageDrop "室間漏れの圧損仕事率近似", indicated "作動室へ入る図示動力",
     shellHeat "シェルから周囲への放熱", electric "電気入力", isentropic "吐出流量基準の等エントロピー動力");

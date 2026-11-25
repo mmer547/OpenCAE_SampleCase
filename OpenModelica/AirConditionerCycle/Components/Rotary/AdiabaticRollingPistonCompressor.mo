@@ -4,13 +4,13 @@ model AdiabaticRollingPistonCompressor "断熱ロータリー圧縮機（作動�
   extends BaseClasses.PartialRollingPiston(
     redeclare final model MotorModel = Adiabatic.Motor,
     redeclare final model ShaftModel = BaseClasses.ShaftMechanics,
-    redeclare final model VaneModel = BaseClasses.VaneMechanics,
+    redeclare replaceable model VaneModel = BaseClasses.VaneMechanics constrainedby BaseClasses.PartialBladeGuide,
     redeclare final model CylinderModel = Adiabatic.Cylinder,
     redeclare final model ShellModel = Adiabatic.DischargePlenum);
   output SI.Power driveLoss "電動機・軸・ベーンで散逸する動力（正）";
 equation
   driveLoss = motor.P_el - motor.driveTorque*motor.w
-    + shaft.frictionTorque*shaft.w + vane.friction*vane.v;
+    + shaft.frictionTorque*shaft.w + vane.frictionPower;
   ambientHeatFlow = 0;
   E = gasAndMechanismEnergy;
   annotation(defaultComponentName="compressor", preferredView="diagram",
